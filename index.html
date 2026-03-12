@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -7,14 +8,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Voice Report System</title>
+  <title>Smart Record</title>
 
   <!-- Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Google Identity Services (Googleログイン用) -->
+  <!-- Google Sign-In -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
@@ -715,36 +716,38 @@
     </div>
   </div>
   <!-- Login Screen -->
-  <div id="screen-login" class="fixed inset-0 z-[9500] flex flex-col items-center justify-center p-6" style="background: linear-gradient(160deg, #14532d 0%, #166534 40%, #1a7a3c 100%);">
-    <div class="text-center mb-10">
-      <div class="text-6xl mb-4">🎙️</div>
-      <h1 class="text-3xl font-bold text-white tracking-wide mb-2">Smart Record</h1>
-      <p class="text-green-200 text-sm">店舗巡回・業務報告システム</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-xs text-center">
-      <p class="text-slate-600 text-sm mb-6 leading-relaxed">会社のGoogleアカウントで<br>ログインしてください</p>
-      <div id="g_id_onload"
-        data-client_id="1072945615483-74jadmaet56chvhkfh2cpt4ae9dvh140.apps.googleusercontent.com"
-        data-callback="handleCredentialResponse"
-        data-auto_select="true"
-        data-context="signin">
+  <div id="screen-login" class="fixed inset-0 bg-white z-[9998] flex flex-col items-center justify-center p-8">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-green-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span class="material-icons text-white text-4xl">mic</span>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-800">Smart Record</h1>
+        <p class="text-sm text-slate-500 mt-1">店舗巡回・業務報告システム</p>
       </div>
-      <div class="g_id_signin"
-        data-type="standard"
-        data-shape="rectangular"
-        data-theme="filled_green"
-        data-text="signin_with"
-        data-size="large"
-        data-locale="ja"
-        data-width="260">
+      <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+        <p class="text-xs text-slate-500 text-center mb-4">会社のGoogleアカウントでログイン</p>
+        <div id="g_id_onload"
+          data-client_id="1072945615483-74jadmaet56chvhkfh2cpt4ae9dvh140.apps.googleusercontent.com"
+          data-callback="handleCredentialResponse"
+          data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin flex justify-center"
+          data-type="standard"
+          data-size="large"
+          data-theme="outline"
+          data-text="sign_in_with"
+          data-shape="rectangular"
+          data-locale="ja">
+        </div>
+        <p id="login-error" class="hidden mt-3 text-xs text-red-600 text-center font-bold"></p>
       </div>
-      <p id="login-error" class="text-red-500 text-xs mt-4 hidden"></p>
+      <p class="text-[10px] text-slate-400 text-center mt-4">※ 社内ドメインのアカウントのみ利用可能</p>
     </div>
-    <p class="text-green-300 text-xs mt-8 text-center opacity-60">本アプリは会社認証ユーザー専用です</p>
   </div>
 
   <!-- Main Screen -->
-  <div id="screen-home" class="container-responsive relative z-0 flex flex-col min-h-screen hidden">
+  <div id="screen-home" class="hidden container-responsive relative z-0 flex flex-col min-h-screen">
     <div class="header-bg text-white p-5 pt-10 pb-16 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
       <div class="flex justify-between items-start relative z-10">
         <div>
@@ -766,9 +769,7 @@
         </div>
         <div class="flex items-center space-x-2">
           <button onclick="window.signOut()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors" title="サインアウト"><span class="material-icons text-white text-sm">logout</span></button>
-          <button onclick="window.toggleMenu()"
-            class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors"><span
-              class="material-icons text-white">manage_accounts</span></button>
+          <button onclick="window.toggleMenu()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors"><span class="material-icons text-white">manage_accounts</span></button>
         </div>
       </div>
     </div>
@@ -1492,37 +1493,27 @@
     <div id="sub-body" class="flex-grow overflow-y-auto p-4 space-y-3 pb-20"></div>
   </div>
   <script>
-    // ════════════════════════════════════════════════
-    // ★★★ GitHub Pages デプロイ用設定（必ず編集）★★★
-    // ════════════════════════════════════════════════
+    // ===== GitHub Pages 設定 =====
     const CONFIG = {
-      // GAS ウェブアプリのデプロイURL（/exec で終わるURL）
       GAS_URL: 'https://script.google.com/macros/s/AKfycbxp-7ikuSC5_-uSalwdRshj6KxHKo30QieRW8j4cU__Dg0cmSIs9NZuCDRqUB2zJEo/exec',
-      // Google Cloud Console の OAuth クライアントID
       GOOGLE_CLIENT_ID: '1072945615483-74jadmaet56chvhkfh2cpt4ae9dvh140.apps.googleusercontent.com',
-      // 許可する会社ドメイン
       ALLOWED_DOMAINS: ['jaz-acoop.co.jp', 'acoop1.jp', 'acoop2.jp', 'acoop3.jp'],
     };
 
-    // ── 状態変数 ──
-    let idToken       = null;   // Google ID Token (JWT)
-    let tokenExpireAt = 0;      // トークン有効期限 (epoch ms)
-    let userProfile   = null;   // マスタから取得したプロフィール
-
+    let idToken = null;
     let audioChunks = [],
-        mediaRecorder = null,
-        recTime = 0,
-        recTimerInterval = null,
-        images = [],
-        mapInstance = null,
-        isDemoMode = false;
+      mediaRecorder = null,
+      recTime = 0,
+      recTimerInterval = null,
+      images = [],
+      mapInstance = null,
+      isDemoMode = false;
     const DAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
     let myShopName = localStorage.getItem('my_shop_name');
 
-    // ════════════════════════════════════
-    // GAS API 呼び出し (fetch版・CORS対応)
-    // ════════════════════════════════════
+    // ===== GAS通信 (fetch版) =====
     async function callGAS(action, data = {}) {
+      if (!idToken) throw new Error('未ログインです');
       const payload = { action, idToken, ...data };
       const res = await fetch(CONFIG.GAS_URL, {
         method: 'POST',
@@ -1531,10 +1522,12 @@
         redirect: 'follow'
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      return await res.json();
+      const json = await res.json();
+      if (json && json.error) throw new Error(json.error);
+      return json;
     }
 
-    // 既存コードとの互換ラッパー (google.script.run の代替)
+    // 既存コードとの互換ラッパー
     function runGasTask(funcName, ...args) {
       const data = (args.length === 1 && args[0] !== null && typeof args[0] === 'object' && !Array.isArray(args[0])) ? args[0] : {};
       return callGAS(funcName, data);
@@ -1577,92 +1570,20 @@
       }
     }
 
-    // ════════════════════════════════════
-    // Google Sign-In コールバック
-    // ════════════════════════════════════
-    window.handleCredentialResponse = async function(response) {
-      try {
-        const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-        const domain = (payload.email || '').split('@')[1] || '';
-        if (!CONFIG.ALLOWED_DOMAINS.includes(domain)) {
-          showLoginError('このアカウントは使用できません。会社のGoogleアカウントでログインしてください。');
-          return;
-        }
-        idToken = response.credential;
-        tokenExpireAt = payload.exp * 1000;
+    // -----------------------------------------------------
+    // App Logic
+    // -----------------------------------------------------
 
-        const overlay = document.getElementById('loading-overlay');
-        overlay.style.display = 'flex';
-        overlay.style.opacity = '1';
-        document.getElementById('loading-msg').innerText = 'プロフィール取得中...';
-
-        const profile = await callGAS('getProfile', {});
-
-        if (profile.error) {
-          overlay.style.display = 'none';
-          showLoginError('エラー: ' + profile.error);
-          return;
-        }
-        if (profile.role === 'GUEST') {
-          overlay.style.display = 'none';
-          showLoginError('このアカウントはマスタに未登録です。管理者にお問い合わせください。');
-          return;
-        }
-        userProfile = profile;
-        window.initApp(profile);
-      } catch(e) {
-        document.getElementById('loading-overlay').style.display = 'none';
-        showLoginError('ログイン処理中にエラーが発生しました: ' + e.message);
-        console.error(e);
-      }
-    };
-
-    function showLoginError(msg) {
-      const el = document.getElementById('login-error');
-      if (el) { el.textContent = msg; el.classList.remove('hidden'); }
-    }
-
-    window.signOut = function() {
-      if (!confirm('サインアウトしますか？')) return;
-      idToken = null; userProfile = null; tokenExpireAt = 0;
-      document.getElementById('screen-login').classList.remove('hidden');
-      document.getElementById('screen-home').classList.add('hidden');
-      const errEl = document.getElementById('login-error');
-      if (errEl) errEl.classList.add('hidden');
-      if (window.google && google.accounts && google.accounts.id) {
-        google.accounts.id.disableAutoSelect();
-      }
-    };
-
-    // ════════════════════════════════════
-    // App Init (ログイン後にプロフィールを受け取って初期化)
-    // ════════════════════════════════════
-    window.initApp = function(user) {
-      if (!user || user.error) {
-        showLoginError(user ? user.error : 'プロフィール取得エラー');
-        return;
-      }
+    window.initApp = function (user) {
+      console.log("App Starting with user:", user);
       const storedShop = localStorage.getItem('my_shop_name');
       myShopName = storedShop || user.shop;
-      if (!storedShop && user.shop) {
-        localStorage.setItem('my_shop_name', user.shop);
-      }
-      console.log("App Init - User:", user.name, "MyShop:", myShopName);
-
-      document.getElementById('shop-text').innerText = myShopName || '--';
-      document.getElementById('user-name').innerText = user.name + ' (' + user.role + ')';
-      document.getElementById('account-name').innerText = user.account || user.email || '--';
-
-      // 画面切り替え
+      document.getElementById('shop-text').innerText = myShopName || "--";
+      document.getElementById('user-name').innerText = user.name + " (" + user.role + ")";
+      document.getElementById('account-name').innerText = user.account;
+      // ログイン画面を隠してホームを表示
       document.getElementById('screen-login').classList.add('hidden');
       document.getElementById('screen-home').classList.remove('hidden');
-
-      // ローディング非表示
-      const overlay = document.getElementById('loading-overlay');
-      overlay.style.opacity = '0';
-      setTimeout(() => { overlay.style.display = 'none'; }, 300);
-
-      // ヘッダーアラートの初期更新
       window.updateHeaderAlert();
     }
 
@@ -1742,22 +1663,47 @@
 
       ;
 
-    // ── GIS 初期化 (ロード後) ──
-    window.addEventListener('load', () => {
-      if (window.google && google.accounts && google.accounts.id) {
-        google.accounts.id.initialize({
-          client_id: CONFIG.GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          auto_select: true,
-          cancel_on_tap_outside: false
-        });
-        google.accounts.id.renderButton(
-          document.querySelector('.g_id_signin'),
-          { theme: 'filled_green', size: 'large', text: 'signin_with', locale: 'ja', width: 260 }
-        );
-        google.accounts.id.prompt();
+    // Google Sign-In コールバック
+    window.handleCredentialResponse = async function (response) {
+      idToken = response.credential;
+      const errEl = document.getElementById('login-error');
+      errEl.classList.add('hidden');
+      try {
+        // ドメインチェック (JWTペイロードから email を読み取る)
+        const payload = JSON.parse(atob(idToken.split('.')[1]));
+        const email = payload.email || '';
+        const domain = email.split('@')[1] || '';
+        if (!CONFIG.ALLOWED_DOMAINS.includes(domain)) {
+          idToken = null;
+          errEl.textContent = '社内ドメインのアカウントでログインしてください。';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        // GASからプロフィール取得
+        const overlay = document.getElementById('loading-overlay');
+        overlay.style.display = 'flex';
+        const user = await callGAS('getProfile');
+        overlay.style.display = 'none';
+        if (!user || user.error) throw new Error(user ? user.error : 'プロフィール取得失敗');
+        window.initApp(user);
+      } catch (e) {
+        idToken = null;
+        document.getElementById('loading-overlay').style.display = 'none';
+        errEl.textContent = 'ログインエラー: ' + e.message;
+        errEl.classList.remove('hidden');
       }
-    });
+    };
+
+    window.signOut = function () {
+      if (!confirm('サインアウトしますか？')) return;
+      idToken = null;
+      document.getElementById('screen-home').classList.add('hidden');
+      document.getElementById('screen-login').classList.remove('hidden');
+      // GISのセッションをリセット
+      if (typeof google !== 'undefined' && google.accounts) {
+        google.accounts.id.disableAutoSelect();
+      }
+    };
 
     window.toggleMenu = function () {
       const menu = document.getElementById('admin-menu');
@@ -1838,66 +1784,72 @@
         btn.classList.remove('btn-recording');
         document.getElementById('rec-status').innerText = "一時停止";
         updateBtns(true);
-        return;
       }
 
-      // 開始処理
-      try {
-        if (!navigator.mediaDevices) {
-          alert("マイク使用不可 (HTTPS必須)");
-          return;
+      else {
+
+        // 開始処理
+        try {
+          if (!navigator.mediaDevices) {
+            alert("マイク使用不可(HTTPS必須)");
+            return;
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true
+          });
+          // iOS対応: サポートされるmimeTypeを選択
+          const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', ''].find(t => !t || MediaRecorder.isTypeSupported(t)) || '';
+          mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+          mediaRecorder.ondataavailable = function (e) {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          }
+
+            ;
+
+          mediaRecorder.onstop = function () {
+            stream.getTracks().forEach(function (t) {
+              t.stop();
+            });
+            btn.classList.remove('btn-recording');
+          }
+
+            ;
+
+          mediaRecorder.start();
+          const startTime = Date.now() - (recTime * 1000);
+
+          recTimerInterval = setInterval(function () {
+            if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+              clearInterval(recTimerInterval);
+              return;
+            }
+
+            recTime = Math.floor((Date.now() - startTime) / 1000);
+
+            // 60秒制限の厳格化
+            if (recTime >= 60) {
+              recTime = 60;
+              window.toggleRecord(); // 停止
+              document.getElementById('timer').innerText = "01:00";
+              alert("録音時間が1分に達したため、自動停止しました。");
+              return;
+            }
+
+            const m = Math.floor(recTime / 60).toString().padStart(2, '0');
+            const s = (recTime % 60).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = m + ":" + s;
+          }
+
+            , 1000);
+
+          btn.classList.add('btn-recording');
+          document.getElementById('rec-status').innerText = "録音中...";
+          updateBtns(false);
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-        // iOS/Safari対応: mimeType フォールバック
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
-        mediaRecorder = mimeType
-          ? new MediaRecorder(stream, { mimeType })
-          : new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = function (e) {
-          if (e.data && e.data.size > 0) audioChunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = function () {
-          stream.getTracks().forEach(function (t) { t.stop(); });
-          btn.classList.remove('btn-recording');
-        };
-
-        mediaRecorder.start();
-        const startTime = Date.now() - (recTime * 1000);
-
-        recTimerInterval = setInterval(function () {
-          if (!mediaRecorder || mediaRecorder.state !== 'recording') {
-            clearInterval(recTimerInterval);
-            return;
-          }
-          recTime = Math.floor((Date.now() - startTime) / 1000);
-
-          // 60秒自動停止
-          if (recTime >= 60) {
-            recTime = 60;
-            window.toggleRecord();
-            document.getElementById('timer').innerText = "01:00";
-            alert("録音時間が1分に達したため、自動停止しました。");
-            return;
-          }
-
-          const m = Math.floor(recTime / 60).toString().padStart(2, '0');
-          const s = (recTime % 60).toString().padStart(2, '0');
-          document.getElementById('timer').innerText = m + ":" + s;
-        }, 1000);
-
-        btn.classList.add('btn-recording');
-        document.getElementById('rec-status').innerText = "録音中...";
-        updateBtns(false);
-      } catch (e) {
-        if (e.name === 'NotAllowedError') {
-          alert("マイクの許可が必要です。\nブラウザのアドレスバーからマイクを「許可」してください。");
-        } else {
+        catch (e) {
           alert("マイクエラー: " + e);
         }
       }
@@ -1924,8 +1876,10 @@
 
     window.playAudio = function () {
       if (audioChunks.length === 0) return;
-      const mimeType = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
-      const blob = new Blob(audioChunks, { type: mimeType });
+
+      const blob = new Blob(audioChunks, {
+        type: 'audio/webm'
+      });
       const a = new Audio(URL.createObjectURL(blob));
       a.play();
     }
@@ -2017,49 +1971,60 @@
 
       if (mode === '巡回') {
         if (!confirm("【確認】\nこれは本部巡回者用の報告先ですがよろしいですか？")) return;
-      } else {
-        if (!confirm(mode + " として送信しますか？")) return;
       }
 
-      // トークン有効期限チェック (残り5分以下)
-      if (Date.now() > tokenExpireAt - 5 * 60 * 1000) {
-        alert('ログインセッションの有効期限が切れました。\n再度ログインしてください。');
-        window.signOut(); return;
+      else {
+        if (!confirm(mode + " として送信しますか？")) return;
       }
 
       doWithLoading("位置情報取得 & 送信中...", new Promise(async (resolve, reject) => {
         try {
-          let loc = { lat: null, lon: null };
+          let loc = {
+            lat: null, lon: null
+          }
+
+            ;
 
           try {
             const pos = await new Promise((r, j) => {
-              navigator.geolocation.getCurrentPosition(r, j, { timeout: 5000 });
+              navigator.geolocation.getCurrentPosition(r, j, {
+                timeout: 5000
+              });
             });
-            loc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-          } catch (e) {
+
+            loc = {
+              lat: pos.coords.latitude, lon: pos.coords.longitude
+            }
+
+              ;
+          }
+
+          catch (e) {
             console.warn("Geo skipped:", e);
           }
 
-          const mimeType = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+          const audioBlob = new Blob(audioChunks);
+          const detectedMime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
           const reader = new FileReader();
-          reader.readAsDataURL(new Blob(audioChunks, { type: mimeType }));
+          reader.readAsDataURL(audioBlob);
 
           reader.onloadend = async function () {
+            // 画像はbase64リストとして直接ペイロードに含める
+            const imageBase64List = images.map(img => ({
+              data: img.data.split(',')[1],
+              type: img.type
+            }));
+
+            const payload = {
+              audioBase64: reader.result.split(',')[1], mimeType: detectedMime, mode: mode, isEmergency: document.getElementById('chk-emg').checked, imageBase64List: imageBase64List, location: loc
+            }
+
+              ;
             document.getElementById('loading-msg').innerText = "AI解析・送信中...";
 
             try {
-              const res = await callGAS('submitVoiceReport', {
-                audioBase64: reader.result.split(',')[1],
-                mimeType: mimeType.split(';')[0],
-                mode: mode,
-                isEmergency: document.getElementById('chk-emg').checked,
-                imageBase64List: images.map(img => ({ data: img.data.split(',')[1], type: img.type })),
-                location: loc
-              });
-
-              if (res.error) { reject("送信エラー: " + res.error); return; }
-
-              alert("送信完了！\n\n【要約】\n" + (res.summary || '（要約なし）'));
+              const res = await runGasTask('submitVoiceReport', payload);
+              alert("送信完了！\n\n【要約】\n" + res.summary);
 
               // Reset
               audioChunks = []; recTime = 0; images = [];
@@ -2068,11 +2033,17 @@
               document.getElementById('chk-emg').checked = false;
               updateBtns(false); updateImagePreview();
               resolve();
-            } catch (e) {
+            }
+
+            catch (e) {
               reject("送信エラー: " + e);
             }
-          };
-        } catch (e) {
+          }
+
+            ;
+        }
+
+        catch (e) {
           reject("処理前エラー: " + e);
         }
       }));
@@ -2739,6 +2710,21 @@
       if (!str) return "";
       return String(str).normalize('NFKC').replace(/[\s\u3000]+/g, "").trim().toLowerCase();
     }
+
+    // GIS初期化 (DOMロード後)
+    window.addEventListener('load', function () {
+      if (typeof google !== 'undefined' && google.accounts) {
+        google.accounts.id.initialize({
+          client_id: CONFIG.GOOGLE_CLIENT_ID,
+          callback: window.handleCredentialResponse,
+          auto_select: false,
+        });
+        google.accounts.id.renderButton(
+          document.querySelector('.g_id_signin'),
+          { theme: 'outline', size: 'large', locale: 'ja' }
+        );
+      }
+    });
 
   </script>
 </body>
