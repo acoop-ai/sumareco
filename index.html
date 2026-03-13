@@ -2326,7 +2326,6 @@
 
       // 非同期処理で取得して描画
       runGasTask('getDashboardData').then((data) => {
-        data = injectDemoAlerts(data);
         renderDash(data);
         const shopToScroll = localStorage.getItem('my_shop_name') || myShopName;
         console.log("RefreshDash - Attempting scroll to:", shopToScroll);
