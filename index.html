@@ -664,9 +664,7 @@
       <!-- Admin Section -->
       <div class="h-1 bg-slate-100 border-t border-slate-200 mt-1"></div>
       <div class="px-4 py-2 text-[10px] font-bold text-slate-400 bg-slate-50 uppercase tracking-wider">Admin
-        Tools</div><button id="demo-mode-toggle" onclick="window.toggleDemoMode()"
-        class="w-full text-left px-4 py-3 text-sm hover:bg-yellow-50 text-yellow-700 flex items-center border-b border-slate-50 font-bold"><span
-          class="material-icons text-lg mr-3">bug_report</span>デモモード切替 (オフ)</button><button
+        Tools</div><button
         onclick="window.forceWeatherUpdate()"
         class="w-full text-left px-4 py-3 text-sm hover:bg-blue-50 text-blue-700 flex items-center border-b border-slate-50"><span
           class="material-icons text-lg mr-3">cloud_sync</span>全店天気データ強制更新</button><button
@@ -1507,7 +1505,6 @@
       recTimerInterval = null,
       images = [],
       mapInstance = null,
-      isDemoMode = false;
     const DAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
     let myShopName = localStorage.getItem('my_shop_name');
 
@@ -1600,7 +1597,6 @@
 
       // 非同期でデータ取得して更新 (エラーは握りつぶして進行)
       runGasTask('getDashboardData').then((data) => {
-        data = injectDemoAlerts(data);
         if (!data || data.length === 0) return;
 
         // 店名正規化比較 (部分一致対応)
@@ -1619,29 +1615,29 @@
 
         if (myData) {
           if (myData.alerts && myData.alerts.length > 0) {
-            // アラートがある場合
-            let topAlert = myData.alerts.find(a => a.level === 'danger') || myData.alerts.find(a => a.level === 'warning') || myData.alerts[0];
-            let borderColor = "border-blue-400", bgColor = "bg-blue-50", iconColor = "text-blue-500", icon = "info";
+            // アラートがある場合 - 全件表示
+            const levelOrder = { danger: 0, warning: 1, order: 2, manufacture: 3, sales: 4, info: 5 };
+            const sorted = [...myData.alerts].sort((a, b) => (levelOrder[a.level] ?? 9) - (levelOrder[b.level] ?? 9));
 
-            if (topAlert.level === 'danger') {
-              borderColor = "border-red-500"; bgColor = "bg-red-50"; iconColor = "text-red-600"; icon = "warning";
-            }
+            const alertRows = sorted.map(a => {
+              let borderColor = "border-blue-400", bgColor = "bg-blue-50", iconColor = "text-blue-500", icon = "info";
+              if (a.level === 'danger')    { borderColor = "border-red-500";    bgColor = "bg-red-50";    iconColor = "text-red-600";    icon = "warning"; }
+              else if (a.level === 'warning')  { borderColor = "border-orange-400"; bgColor = "bg-orange-50"; iconColor = "text-orange-500"; icon = "error_outline"; }
+              else if (a.level === 'order' || a.level === 'manufacture') { borderColor = "border-green-400"; bgColor = "bg-green-50"; iconColor = "text-green-600"; icon = "task"; }
+              else if (a.level === 'sales')    { borderColor = "border-teal-400";   bgColor = "bg-teal-50";   iconColor = "text-teal-600";   icon = "trending_up"; }
+              return `<div class="flex items-start border-l-4 rounded-r-lg px-3 py-2 mb-1 cursor-pointer ${borderColor} ${bgColor}" onclick="window.showScreen('dash-screen')">
+                <span class="material-icons ${iconColor} text-sm mr-2 mt-0.5 flex-shrink-0">${icon}</span>
+                <div class="w-full min-w-0">
+                  <div class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>${a.title} <span class="text-[10px] bg-white px-1 rounded border border-slate-200 ml-1 text-slate-500">${a.date}</span></span>
+                  </div>
+                  <p class="text-xs ${iconColor} font-semibold mt-0.5 leading-snug">${a.msg}</p>
+                </div>
+              </div>`;
+            }).join('');
 
-            else if (topAlert.level === 'warning') {
-              borderColor = "border-orange-400"; bgColor = "bg-orange-50"; iconColor = "text-orange-500"; icon = "error_outline";
-            }
-
-            else if (topAlert.level === 'order' || topAlert.level === 'manufacture') {
-              borderColor = "border-green-400"; bgColor = "bg-green-50"; iconColor = "text-green-600"; icon = "task";
-            }
-
-            else if (topAlert.level === 'sales') {
-              borderColor = "border-teal-400"; bgColor = "bg-teal-50"; iconColor = "text-teal-600"; icon = "trending_up";
-            }
-
-            area.className = `block border-l-4 rounded-r-lg p-3 shadow-md transform transition-all hover:scale-[1.01] cursor-pointer ${borderColor} ${bgColor} mb-4`;
-
-            area.innerHTML = ` <div class="flex items-start" > <span class="material-icons ${iconColor} mr-2 mt-0.5" >${icon}</span> <div class="w-full" > <div class="text-xs font-bold text-slate-700 flex items-center justify-between w-full" > <span>${topAlert.title} <span class="text-[10px] bg-white px-1 rounded border border-slate-200 ml-1 text-slate-500" >${topAlert.date} </span></span> <span class="text-[10px] text-blue-600 underline ml-2 whitespace-nowrap" >詳細を表示</span> </div> <p class="text-xs ${iconColor} font-bold mt-0.5" >${topAlert.msg} </p> </div> </div> `;
+            area.className = `block mb-4`;
+            area.innerHTML = `<div class="text-[10px] font-bold text-slate-500 mb-1 px-1">⚠️ アラート ${sorted.length}件</div>${alertRows}<div class="text-[10px] text-blue-600 underline text-right pr-1 cursor-pointer" onclick="window.showScreen('dash-screen')">詳細を表示</div>`;
           }
 
           else {
@@ -2288,7 +2284,7 @@
 
     window.drawMapPins = function (shops) {
       if (!mapInstance) return;
-      shops = injectDemoAlerts(shops); // デモモード対応
+
 
       mapInstance.eachLayer(function (l) {
         if (l instanceof L.CircleMarker) mapInstance.removeLayer(l);
@@ -2634,70 +2630,6 @@
 
       ;
 
-    window.toggleDemoMode = function () {
-      isDemoMode = !isDemoMode;
-      const btn = document.getElementById('demo-mode-toggle');
-
-      if (isDemoMode) {
-        btn.innerHTML = '<span class="material-icons text-lg mr-3">bug_report</span> デモモード切替 (オン)';
-        btn.classList.add('bg-yellow-100');
-        alert("デモモードをオンにしました。\n天候データにテスト用のアラートが注入されます。");
-      }
-
-      else {
-        btn.innerHTML = '<span class="material-icons text-lg mr-3">bug_report</span> デモモード切替 (オフ)';
-        btn.classList.remove('bg-yellow-100');
-        alert("デモモードをオフにしました。");
-      }
-
-      window.updateHeaderAlert();
-
-      if (!document.getElementById('dash-screen').classList.contains('hidden')) {
-        window.refreshDash();
-      }
-    }
-
-      ;
-
-    function injectDemoAlerts(data) {
-      if (!isDemoMode) return data;
-
-      return data.map((s, i) => {
-
-        // いくつかの店舗にデモアラートを注入 (Ver 2.0 基準)
-        if (i % 3 === 0) {
-          // パターン1: リアルタイムの災害警報(Danger) + 販促(Sales)
-          s.alerts.push({
-            title: "暴風警報", msg: "【店長判断】非常に強い風が予想されます。屋外作業を【全面中止】し、自動ドアの手動切り替え、看板・のぼりの完全撤去を行ってください。", level: "danger", date: "現在"
-          });
-          s.alerts.push({
-            title: "雨上がり・客足回復", msg: "【タイムサービス】「雨上がりタイムサービス」の放送実施。値引きシール貼印時間を遅らせ、利益を確保してください。", level: "sales", date: "現在"
-          });
-        }
-
-        else if (i % 3 === 1) {
-          // パターン2: 翌日の製造調整(Manufacture) + 猛暑警戒(Danger)
-          s.alerts.push({
-            title: "猛暑警戒", msg: "【従業員管理】最高気温35℃以上の酷暑です。外作業は15分ローテーションを徹底し、こまめな水分補給を指示してください。", level: "danger", date: "現在"
-          });
-          s.alerts.push({
-            title: "行楽・イベント日和", msg: "【惣菜・寿司: 攻めの製造】行楽弁当・寿司・オードブルの製造数を120%に設定。午前中の鮮度ある品揃えを厚くしてください。", level: "manufacture", date: "明日"
-          });
-        }
-
-        else if (i % 3 === 2) {
-          // パターン3: 明後日の発注抑制(Order) + 大雨警戒(Warning)
-          s.alerts.push({
-            title: "大雨警戒", msg: "【施設管理・値引き】激しい雨による浸水・雨漏りに注意。客足停止を見越した惣菜・日配の早期売り切り判断を優先してください。", level: "warning", date: "現在"
-          });
-          s.alerts.push({
-            title: "客足鈍化・内食予報", msg: "【部門チーフ: 発注抑制】明後日の降雨予報。日配・葉物野菜の発注を前週比90%に絞り、廃棄ロスを防止してください。", level: "order", date: "2日後"
-          });
-        }
-
-        return s;
-      });
-    }
 
     window.scrollToManualSection = function (id) {
       const el = document.getElementById(id);
