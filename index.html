@@ -744,6 +744,36 @@
     </div>
   </div>
 
+  <!-- 初回登録・プロフィール編集画面 -->
+  <div id="screen-register" class="hidden fixed inset-0 bg-white z-[9998] flex flex-col items-center justify-center p-8">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-green-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span class="material-icons text-white text-3xl">person</span>
+        </div>
+        <h2 id="register-title" class="text-xl font-bold text-slate-800">プロフィール設定</h2>
+        <p class="text-sm text-slate-500 mt-1">名前と所属を入力してください</p>
+      </div>
+      <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 space-y-4">
+        <div>
+          <label class="text-xs font-bold text-slate-600 block mb-1">氏名</label>
+          <input id="register-name" type="text" placeholder="例：田中 太郎"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-600">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-slate-600 block mb-1">所属（店舗名）</label>
+          <input id="register-shop" type="text" placeholder="例：○○店"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-600">
+        </div>
+        <p id="register-error" class="hidden text-xs text-red-600 font-bold"></p>
+        <button onclick="submitRegister()"
+          class="w-full bg-green-700 text-white rounded-xl py-3 font-bold text-sm btn-press">
+          保存して開始
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Screen -->
   <div id="screen-home" class="hidden container-responsive relative z-0 flex flex-col min-h-screen">
     <div class="header-bg text-white p-5 pt-10 pb-16 rounded-b-[2.5rem] shadow-lg relative overflow-hidden">
@@ -766,6 +796,7 @@
           </div>
         </div>
         <div class="flex items-center space-x-2">
+          <button onclick="window.openEditProfile()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors" title="プロフィール編集"><span class="material-icons text-white text-sm">manage_accounts</span></button>
           <button onclick="window.signOut()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors" title="サインアウト"><span class="material-icons text-white text-sm">logout</span></button>
           <button onclick="window.toggleMenu()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors"><span class="material-icons text-white">manage_accounts</span></button>
         </div>
@@ -1680,7 +1711,15 @@
         overlay.style.display = 'flex';
         const user = await callGAS('getProfile');
         overlay.style.display = 'none';
-        if (!user || user.error) throw new Error(user ? user.error : 'プロフィール取得失敗');
+        if (!user) throw new Error('プロフィール取得失敗');
+        if (user.error && !user.registered === false) throw new Error(user.error);
+        // 未登録ユーザー → 初回登録画面へ
+        if (user.registered === false) {
+          document.getElementById('screen-login').classList.add('hidden');
+          document.getElementById('register-title').textContent = 'はじめに設定してください';
+          document.getElementById('screen-register').classList.remove('hidden');
+          return;
+        }
         window.initApp(user);
       } catch (e) {
         idToken = null;
@@ -1688,6 +1727,41 @@
         errEl.textContent = 'ログインエラー: ' + e.message;
         errEl.classList.remove('hidden');
       }
+    };
+
+    // 初回登録・プロフィール更新の送信
+    window.submitRegister = async function () {
+      const name = document.getElementById('register-name').value.trim();
+      const shop = document.getElementById('register-shop').value.trim();
+      const errEl = document.getElementById('register-error');
+      if (!name || !shop) {
+        errEl.textContent = '氏名と所属を両方入力してください';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+      const overlay = document.getElementById('loading-overlay');
+      overlay.style.display = 'flex';
+      try {
+        const result = await callGAS('registerProfile', { name, shop });
+        overlay.style.display = 'none';
+        if (!result || result.error) throw new Error(result ? result.error : '登録失敗');
+        document.getElementById('screen-register').classList.add('hidden');
+        window.initApp(result);
+      } catch (e) {
+        overlay.style.display = 'none';
+        errEl.textContent = '登録エラー: ' + e.message;
+        errEl.classList.remove('hidden');
+      }
+    };
+
+    // プロフィール編集画面を開く
+    window.openEditProfile = function () {
+      document.getElementById('register-title').textContent = 'プロフィール編集';
+      document.getElementById('register-name').value = document.getElementById('user-name').innerText;
+      document.getElementById('register-shop').value = document.getElementById('shop-text').innerText;
+      document.getElementById('register-error').classList.add('hidden');
+      document.getElementById('screen-register').classList.remove('hidden');
     };
 
     window.signOut = function () {
