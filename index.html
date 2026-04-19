@@ -799,7 +799,7 @@
         <div class="flex items-center space-x-2">
           <button onclick="window.openEditProfile()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors" title="プロフィール編集"><span class="material-icons text-white text-sm">manage_accounts</span></button>
           <button onclick="window.signOut()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors" title="サインアウト"><span class="material-icons text-white text-sm">logout</span></button>
-          <button onclick="window.toggleMenu()" class="p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors"><span class="material-icons text-white">manage_accounts</span></button>
+          <button id="btn-admin-menu" onclick="window.toggleMenu()" class="hidden p-2 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-full transition-colors"><span class="material-icons text-white">settings</span></button>
         </div>
       </div>
     </div>
@@ -1808,6 +1808,9 @@
       // HQ_ADMIN または ADMIN の場合に「本部配信」ボタンを表示
       const hqBtn = document.getElementById('btn-hq-admin');
       if (hqBtn) hqBtn.classList.toggle('hidden', userRole !== 'HQ_ADMIN' && userRole !== 'ADMIN');
+      // ADMIN または HQ_ADMIN の場合のみメニューボタンを表示
+      const menuBtn = document.getElementById('btn-admin-menu');
+      if (menuBtn) menuBtn.classList.toggle('hidden', userRole !== 'ADMIN' && userRole !== 'HQ_ADMIN');
       // ログイン画面を隠してホームを表示
       document.getElementById('screen-login').classList.add('hidden');
       document.getElementById('screen-home').classList.remove('hidden');
