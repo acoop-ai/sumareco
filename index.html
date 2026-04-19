@@ -760,9 +760,11 @@
             class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-600">
         </div>
         <div>
-          <label class="text-xs font-bold text-slate-600 block mb-1">所属（店舗名）</label>
-          <input id="register-shop" type="text" placeholder="例：○○店"
-            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-600">
+          <label class="text-xs font-bold text-slate-600 block mb-1">所属</label>
+          <select id="register-shop"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-600 bg-white">
+            <option value="">読み込み中...</option>
+          </select>
         </div>
         <p id="register-error" class="hidden text-xs text-red-600 font-bold"></p>
         <button onclick="submitRegister()"
@@ -1917,7 +1919,7 @@
         if (user.registered === false) {
           document.getElementById('screen-login').classList.add('hidden');
           document.getElementById('register-title').textContent = 'はじめに設定してください';
-          document.getElementById('screen-register').classList.remove('hidden');
+          await window.openRegisterScreen();
           return;
         }
         window.initApp(user);
@@ -1929,13 +1931,35 @@
       }
     };
 
+    // 登録画面を開く共通ヘルパー（店舗リストをGASから取得してドロップダウンを構築）
+    window.openRegisterScreen = async function (currentShop = '') {
+      const sel = document.getElementById('register-shop');
+      sel.innerHTML = '<option value="">読み込み中...</option>';
+      document.getElementById('screen-register').classList.remove('hidden');
+      try {
+        const shops = await callGAS('getShopList');
+        sel.innerHTML = '';
+        (Array.isArray(shops) ? shops : ['本部']).forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s;
+          opt.textContent = s;
+          if (s === currentShop) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        // currentShop が一覧になければ先頭を選択
+        if (currentShop && !sel.value) sel.value = shops[0] || '';
+      } catch (e) {
+        sel.innerHTML = '<option value="本部">本部</option>';
+      }
+    };
+
     // 初回登録・プロフィール更新の送信
     window.submitRegister = async function () {
-      const name = document.getElementById('register-name').value.trim();
-      const shop = document.getElementById('register-shop').value.trim();
+      const name  = document.getElementById('register-name').value.trim();
+      const shop  = document.getElementById('register-shop').value;
       const errEl = document.getElementById('register-error');
       if (!name || !shop) {
-        errEl.textContent = '氏名と所属を両方入力してください';
+        errEl.textContent = '氏名と所属を両方選択してください';
         errEl.classList.remove('hidden');
         return;
       }
@@ -1956,12 +1980,12 @@
     };
 
     // プロフィール編集画面を開く
-    window.openEditProfile = function () {
+    window.openEditProfile = async function () {
       document.getElementById('register-title').textContent = 'プロフィール編集';
       document.getElementById('register-name').value = document.getElementById('user-name').innerText;
-      document.getElementById('register-shop').value = document.getElementById('shop-text').innerText;
       document.getElementById('register-error').classList.add('hidden');
-      document.getElementById('screen-register').classList.remove('hidden');
+      const currentShop = document.getElementById('shop-text').innerText;
+      await window.openRegisterScreen(currentShop);
     };
 
     window.signOut = function () {
