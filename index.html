@@ -873,9 +873,180 @@
       </div><button onclick="window.showHistory()"
         class="btn-press w-full py-3 text-sm text-slate-500 font-bold bg-transparent rounded-xl flex items-center justify-center"><span
           class="material-icons text-sm mr-2">history</span>送信履歴を確認</button>
+      <!-- 本部専用ボタン（HQ_ADMINのみ表示） -->
+      <button id="btn-hq-admin" onclick="window.showHQAdmin()"
+        class="hidden btn-press w-full py-3 text-sm font-bold bg-indigo-700 text-white rounded-xl flex items-center justify-center shadow-lg">
+        <span class="material-icons text-sm mr-2">campaign</span>本部配信管理
+      </button>
       <div class="h-8"></div>
     </div>
   </div>
+  <!-- HQ Admin Screen -->
+  <div id="hq-admin-screen" class="hidden fixed inset-0 bg-slate-50 z-[2000] flex flex-col">
+    <div class="flex items-center p-4 border-b bg-indigo-700 shadow-sm sticky top-0 z-30">
+      <button onclick="window.closeHQAdmin()" class="p-2 -ml-2 text-white"><span class="material-icons">arrow_back</span></button>
+      <span class="material-icons text-white ml-1 mr-2">campaign</span>
+      <h2 class="text-lg font-bold text-white">本部配信管理</h2>
+    </div>
+    <div class="overflow-y-auto flex-grow p-4 space-y-4">
+
+      <!-- タブ切り替え -->
+      <div class="flex bg-white rounded-xl shadow-sm border border-slate-100 p-1">
+        <button id="hq-tab-send" onclick="window.switchHQTab('send')"
+          class="flex-1 py-2 text-sm font-bold rounded-lg bg-indigo-700 text-white transition-colors">
+          <span class="material-icons text-sm align-middle mr-1">send</span>今すぐ送る
+        </button>
+        <button id="hq-tab-schedule" onclick="window.switchHQTab('schedule')"
+          class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-500 transition-colors">
+          <span class="material-icons text-sm align-middle mr-1">schedule</span>定期スケジュール
+        </button>
+        <button id="hq-tab-list" onclick="window.switchHQTab('list')"
+          class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-500 transition-colors">
+          <span class="material-icons text-sm align-middle mr-1">list</span>配信一覧
+        </button>
+      </div>
+
+      <!-- ① 今すぐ送る -->
+      <div id="hq-panel-send" class="space-y-3">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+          <h3 class="text-sm font-bold text-slate-600 flex items-center"><span class="material-icons text-indigo-600 text-sm mr-1">flash_on</span>即時通知を送る</h3>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">タイトル <span class="text-red-500">*</span></label>
+            <input id="hq-title" type="text" placeholder="例：棚卸し実施のお知らせ" maxlength="40"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">本文 <span class="text-red-500">*</span></label>
+            <textarea id="hq-msg" rows="3" placeholder="例：本日17時より全店一斉で棚卸しを実施します。各店舗チーフは準備をお願いします。" maxlength="200"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">対象店舗</label>
+              <select id="hq-target" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                <option value="全店">全店</option>
+                <option value="東北">東北エリア</option>
+                <option value="関東">関東エリア</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">重要度</label>
+              <select id="hq-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                <option value="hq">📢 本部通知（ネイビー）</option>
+                <option value="info">ℹ️ 情報（グレー）</option>
+                <option value="warning">⚠️ 注意（オレンジ）</option>
+                <option value="danger">🚨 重要（赤）</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">表示期限（省略=翌日0時まで）</label>
+            <input id="hq-endat" type="datetime-local"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          </div>
+
+          <button onclick="window.submitHQAlert()"
+            class="btn-press w-full py-3 bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center shadow-lg">
+            <span class="material-icons text-sm mr-2">send</span>今すぐ配信する
+          </button>
+        </div>
+      </div>
+
+      <!-- ② 定期スケジュール登録 -->
+      <div id="hq-panel-schedule" class="hidden space-y-3">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+          <h3 class="text-sm font-bold text-slate-600 flex items-center"><span class="material-icons text-indigo-600 text-sm mr-1">schedule</span>定期アラートを登録する</h3>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">タイトル <span class="text-red-500">*</span></label>
+            <input id="hqs-title" type="text" placeholder="例：週次安全確認リマインダー" maxlength="40"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">本文 <span class="text-red-500">*</span></label>
+            <textarea id="hqs-msg" rows="3" placeholder="例：毎週月曜日に店内消耗品（袋・レジロール）の在庫を確認してください。" maxlength="200"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">対象店舗</label>
+              <select id="hqs-target" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                <option value="全店">全店</option>
+                <option value="東北">東北エリア</option>
+                <option value="関東">関東エリア</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">重要度</label>
+              <select id="hqs-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                <option value="hq">📢 本部通知</option>
+                <option value="info">ℹ️ 情報</option>
+                <option value="warning">⚠️ 注意</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">繰り返し <span class="text-red-500">*</span></label>
+              <select id="hqs-repeat" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                <option value="毎日">毎日</option>
+                <option value="毎週月">毎週月曜</option>
+                <option value="毎週火">毎週火曜</option>
+                <option value="毎週水">毎週水曜</option>
+                <option value="毎週木">毎週木曜</option>
+                <option value="毎週金">毎週金曜</option>
+                <option value="毎週土">毎週土曜</option>
+                <option value="毎週日">毎週日曜</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 block mb-1">配信時刻 <span class="text-red-500">*</span></label>
+              <input id="hqs-time" type="time" value="08:00"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">有効期限（省略=無期限）</label>
+            <input id="hqs-endat" type="date"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          </div>
+
+          <div class="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-xs text-indigo-700">
+            <span class="material-icons text-xs align-middle mr-1">info</span>
+            配信時刻から8時間、各店舗の画面に表示されます。
+          </div>
+
+          <button onclick="window.submitHQSchedule()"
+            class="btn-press w-full py-3 bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center shadow-lg">
+            <span class="material-icons text-sm mr-2">add_alarm</span>定期アラートを登録する
+          </button>
+        </div>
+      </div>
+
+      <!-- ③ 配信一覧 -->
+      <div id="hq-panel-list" class="hidden space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-500">配信中・予定のアラート</span>
+          <button onclick="window.loadHQAlertList()" class="text-xs text-indigo-600 font-bold flex items-center">
+            <span class="material-icons text-xs mr-1">refresh</span>更新
+          </button>
+        </div>
+        <div id="hq-alert-list" class="space-y-2">
+          <div class="text-center text-slate-400 text-sm py-8">読み込み中...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Map Screen -->
   <div id="map-screen" class="hidden fixed inset-0 bg-white z-[2000] flex flex-col">
     <div class="flex items-center p-4 border-b bg-white shadow-sm z-10"><button onclick="window.closeMap()"
@@ -1529,6 +1700,7 @@
     };
 
     let idToken = null;
+    let userRole = null; // ログイン中ユーザーのロール（HQ_ADMINかどうかの判定に使用）
     let tokenRefreshTimer = null; // IDトークン自動リフレッシュ用タイマー
     let audioChunks = [],
       mediaRecorder = null,
@@ -1625,11 +1797,15 @@
 
     window.initApp = function (user) {
       console.log("App Starting with user:", user);
+      userRole = user.role || '';
       const storedShop = localStorage.getItem('my_shop_name');
       myShopName = storedShop || user.shop;
       document.getElementById('shop-text').innerText = myShopName || "--";
       document.getElementById('user-name').innerText = user.name + " (" + user.role + ")";
       document.getElementById('account-name').innerText = user.account;
+      // HQ_ADMINの場合のみ「本部配信」ボタンを表示
+      const hqBtn = document.getElementById('btn-hq-admin');
+      if (hqBtn) hqBtn.classList.toggle('hidden', userRole !== 'HQ_ADMIN');
       // ログイン画面を隠してホームを表示
       document.getElementById('screen-login').classList.add('hidden');
       document.getElementById('screen-home').classList.remove('hidden');
@@ -1673,7 +1849,8 @@
 
             const alertRows = sorted.map(a => {
               let borderColor = "border-blue-400", bgColor = "bg-blue-50", iconColor = "text-blue-500", icon = "info";
-              if (a.level === 'danger')    { borderColor = "border-red-500";    bgColor = "bg-red-50";    iconColor = "text-red-600";    icon = "warning"; }
+              if (a.level === 'hq')        { borderColor = "border-indigo-600";  bgColor = "bg-indigo-50"; iconColor = "text-indigo-700"; icon = "campaign"; }
+              else if (a.level === 'danger')    { borderColor = "border-red-500";    bgColor = "bg-red-50";    iconColor = "text-red-600";    icon = "warning"; }
               else if (a.level === 'warning')  { borderColor = "border-orange-400"; bgColor = "bg-orange-50"; iconColor = "text-orange-500"; icon = "error_outline"; }
               else if (a.level === 'order' || a.level === 'manufacture') { borderColor = "border-green-400"; bgColor = "bg-green-50"; iconColor = "text-green-600"; icon = "task"; }
               else if (a.level === 'sales')    { borderColor = "border-teal-400";   bgColor = "bg-teal-50";   iconColor = "text-teal-600";   icon = "trending_up"; }
@@ -2180,7 +2357,11 @@
           let badgeClass = "bg-gray-100 text-gray-700";
           let icon = "info";
 
-          if (a.level === 'danger') {
+          if (a.level === 'hq') {
+            badgeClass = "bg-indigo-700 text-white font-bold"; icon = "campaign";
+          }
+
+          else if (a.level === 'danger') {
             badgeClass = "bg-red-600 text-white animate-pulse font-bold"; icon = "warning";
           }
 
@@ -2742,6 +2923,137 @@
       const el = document.getElementById(id);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    // ============================================================
+    // 本部配信管理 (HQ_ADMIN専用)
+    // ============================================================
+    window.showHQAdmin = function () {
+      document.getElementById('hq-admin-screen').classList.remove('hidden');
+      window.switchHQTab('send');
+    };
+
+    window.closeHQAdmin = function () {
+      document.getElementById('hq-admin-screen').classList.add('hidden');
+    };
+
+    window.switchHQTab = function (tab) {
+      ['send', 'schedule', 'list'].forEach(t => {
+        const btn   = document.getElementById('hq-tab-' + t);
+        const panel = document.getElementById('hq-panel-' + t);
+        const active = (t === tab);
+        btn.classList.toggle('bg-indigo-700', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-slate-500', !active);
+        panel.classList.toggle('hidden', !active);
+      });
+      if (tab === 'list') window.loadHQAlertList();
+    };
+
+    // ① 即時通知送信
+    window.submitHQAlert = async function () {
+      const title  = document.getElementById('hq-title').value.trim();
+      const msg    = document.getElementById('hq-msg').value.trim();
+      const target = document.getElementById('hq-target').value;
+      const level  = document.getElementById('hq-level').value;
+      const endAt  = document.getElementById('hq-endat').value;
+
+      if (!title || !msg) { alert('タイトルと本文は必須です。'); return; }
+      if (!confirm(`【確認】\n対象：${target}\n「${title}」を今すぐ配信しますか？`)) return;
+
+      try {
+        await doWithLoading('配信中...', callGAS('submitHQAlert', {
+          title, msg, target, level, type: '即時',
+          endAt: endAt ? new Date(endAt).toISOString() : ''
+        }));
+        alert('配信しました。各店舗の画面に反映されます（最大15分）。');
+        document.getElementById('hq-title').value = '';
+        document.getElementById('hq-msg').value   = '';
+        document.getElementById('hq-endat').value = '';
+      } catch (e) {
+        alert('送信エラー: ' + e.message);
+      }
+    };
+
+    // ② 定期スケジュール登録
+    window.submitHQSchedule = async function () {
+      const title      = document.getElementById('hqs-title').value.trim();
+      const msg        = document.getElementById('hqs-msg').value.trim();
+      const target     = document.getElementById('hqs-target').value;
+      const level      = document.getElementById('hqs-level').value;
+      const repeat     = document.getElementById('hqs-repeat').value;
+      const repeatTime = document.getElementById('hqs-time').value;
+      const endAt      = document.getElementById('hqs-endat').value;
+
+      if (!title || !msg)        { alert('タイトルと本文は必須です。'); return; }
+      if (!repeatTime)           { alert('配信時刻を設定してください。'); return; }
+      if (!confirm(`【確認】\n${repeat} ${repeatTime} に「${title}」を定期配信登録しますか？`)) return;
+
+      try {
+        await doWithLoading('登録中...', callGAS('submitHQAlert', {
+          title, msg, target, level, type: '定期',
+          repeat, repeatTime,
+          endAt: endAt || ''
+        }));
+        alert('定期アラートを登録しました。');
+        document.getElementById('hqs-title').value = '';
+        document.getElementById('hqs-msg').value   = '';
+        document.getElementById('hqs-endat').value = '';
+      } catch (e) {
+        alert('登録エラー: ' + e.message);
+      }
+    };
+
+    // ③ 一覧取得・表示
+    window.loadHQAlertList = async function () {
+      const listEl = document.getElementById('hq-alert-list');
+      listEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-8">読み込み中...</div>';
+      try {
+        const list = await callGAS('getHQAlertList', {});
+        if (!list || list.length === 0) {
+          listEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-8">配信履歴はありません</div>';
+          return;
+        }
+        const statusColor = { '配信中':'bg-green-100 text-green-800', '有効':'bg-indigo-100 text-indigo-800',
+          '待機中':'bg-yellow-100 text-yellow-800', '配信済':'bg-slate-100 text-slate-500', '停止':'bg-red-100 text-red-600' };
+        listEl.innerHTML = list.map(a => {
+          const sc = statusColor[a.status] || 'bg-slate-100 text-slate-500';
+          const canStop = (a.status === '配信中' || a.status === '有効' || a.status === '待機中');
+          const schedInfo = a.type === '定期'
+            ? `<span class="text-indigo-600">${a.repeat} ${a.repeatTime}</span>`
+            : `〜${a.endAt || '翌日'}`;
+          return `<div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+            <div class="flex items-start justify-between mb-1">
+              <span class="font-bold text-sm text-slate-700 flex-1 mr-2">${a.title}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${sc}">${a.status}</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-2">${a.msg}${a.msg.length >= 50 ? '…' : ''}</p>
+            <div class="flex flex-wrap gap-2 text-[10px] text-slate-400 mb-2">
+              <span>📍 ${a.target}</span>
+              <span>🕐 ${a.type === '定期' ? '定期 ' : ''}${schedInfo}</span>
+              <span>👤 ${a.author} ${a.createdAt}</span>
+            </div>
+            ${canStop ? `<button onclick="window.stopHQAlert('${a.id}')"
+              class="w-full py-1.5 text-xs font-bold text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
+              <span class="material-icons text-xs align-middle mr-1">stop_circle</span>停止する
+            </button>` : ''}
+          </div>`;
+        }).join('');
+      } catch (e) {
+        listEl.innerHTML = `<div class="text-center text-red-400 text-sm py-8">取得エラー: ${e.message}</div>`;
+      }
+    };
+
+    // アラート停止
+    window.stopHQAlert = async function (alertId) {
+      if (!confirm('このアラートを停止しますか？')) return;
+      try {
+        await doWithLoading('停止中...', callGAS('stopHQAlert', { alertId }));
+        alert('停止しました。');
+        window.loadHQAlertList();
+      } catch (e) {
+        alert('停止エラー: ' + e.message);
       }
     };
 
