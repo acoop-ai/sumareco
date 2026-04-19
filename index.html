@@ -1805,9 +1805,9 @@
       document.getElementById('shop-text').innerText = myShopName || "--";
       document.getElementById('user-name').innerText = user.name + " (" + user.role + ")";
       document.getElementById('account-name').innerText = user.account;
-      // HQ_ADMINの場合のみ「本部配信」ボタンを表示
+      // HQ_ADMIN または ADMIN の場合に「本部配信」ボタンを表示
       const hqBtn = document.getElementById('btn-hq-admin');
-      if (hqBtn) hqBtn.classList.toggle('hidden', userRole !== 'HQ_ADMIN');
+      if (hqBtn) hqBtn.classList.toggle('hidden', userRole !== 'HQ_ADMIN' && userRole !== 'ADMIN');
       // ログイン画面を隠してホームを表示
       document.getElementById('screen-login').classList.add('hidden');
       document.getElementById('screen-home').classList.remove('hidden');
