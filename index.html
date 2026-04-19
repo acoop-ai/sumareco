@@ -906,6 +906,10 @@
           class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-500 transition-colors">
           <span class="material-icons text-sm align-middle mr-1">list</span>配信一覧
         </button>
+        <button id="hq-tab-guide" onclick="window.switchHQTab('guide')"
+          class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-500 transition-colors">
+          <span class="material-icons text-sm align-middle mr-1">help_outline</span>使い方
+        </button>
       </div>
 
       <!-- ① 今すぐ送る -->
@@ -1045,6 +1049,180 @@
           <div class="text-center text-slate-400 text-sm py-8">読み込み中...</div>
         </div>
       </div>
+
+      <!-- ④ 使い方ガイド -->
+      <div id="hq-panel-guide" class="hidden space-y-3 pb-4">
+
+        <!-- 重要度レベル -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+          <h3 class="text-sm font-bold text-slate-700 flex items-center">
+            <span class="material-icons text-indigo-600 text-base mr-2">palette</span>重要度レベルの使い分け
+          </h3>
+          <div class="space-y-2">
+            <div class="flex items-start gap-3 p-3 rounded-xl bg-indigo-50 border border-indigo-200">
+              <span class="text-lg leading-none mt-0.5">📢</span>
+              <div>
+                <p class="text-xs font-bold text-indigo-800">本部通知（ネイビー）</p>
+                <p class="text-xs text-indigo-700 mt-0.5">棚卸し・新商品導入・研修案内など、日常的な本部からのお知らせ。</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 rounded-xl bg-blue-50 border border-blue-200">
+              <span class="text-lg leading-none mt-0.5">ℹ️</span>
+              <div>
+                <p class="text-xs font-bold text-blue-800">情報（ブルー）</p>
+                <p class="text-xs text-blue-700 mt-0.5">キャンペーン告知・販促情報など、参考として共有したい情報。</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 rounded-xl bg-orange-50 border border-orange-200">
+              <span class="text-lg leading-none mt-0.5">⚠️</span>
+              <div>
+                <p class="text-xs font-bold text-orange-800">注意（オレンジ）</p>
+                <p class="text-xs text-orange-700 mt-0.5">食品の自主回収・設備点検依頼など、対応が必要な注意事項。</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 rounded-xl bg-red-50 border border-red-200">
+              <span class="text-lg leading-none mt-0.5">🚨</span>
+              <div>
+                <p class="text-xs font-bold text-red-800">重要（レッド）</p>
+                <p class="text-xs text-red-700 mt-0.5">緊急閉店・重大クレーム・即時対応が必要な緊急連絡に使用。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 即時配信の手順 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+          <h3 class="text-sm font-bold text-slate-700 flex items-center">
+            <span class="material-icons text-indigo-600 text-base mr-2">flash_on</span>即時配信の手順
+          </h3>
+          <ol class="space-y-3">
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">「今すぐ送る」タブを開く</p>
+                <p class="text-xs text-slate-500 mt-0.5">画面上部のタブから選択します。</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">タイトルと本文を入力する</p>
+                <p class="text-xs text-slate-500 mt-0.5">タイトルは最大40文字、本文は最大200文字です。具体的・簡潔に記載してください。</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">対象店舗・重要度を選ぶ</p>
+                <p class="text-xs text-slate-500 mt-0.5">全店・東北エリア・関東エリアから選択。重要度は上の表を参考にしてください。</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">4</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">表示期限を設定する（任意）</p>
+                <p class="text-xs text-slate-500 mt-0.5">省略すると翌日0時まで表示されます。長期案内は期限を明示してください。</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">5</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">「今すぐ配信する」ボタンを押す</p>
+                <p class="text-xs text-slate-500 mt-0.5">押した瞬間から全対象店舗のダッシュボードに表示されます。</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- 定期スケジュールの設定 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+          <h3 class="text-sm font-bold text-slate-700 flex items-center">
+            <span class="material-icons text-indigo-600 text-base mr-2">schedule</span>定期スケジュールの設定
+          </h3>
+          <ol class="space-y-3">
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">「定期スケジュール」タブを開く</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">繰り返し条件と配信時刻を設定する</p>
+                <p class="text-xs text-slate-500 mt-0.5">毎日 / 毎週〇曜日から選択し、配信したい時刻を入力してください。</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">有効期限を設定する（任意）</p>
+                <p class="text-xs text-slate-500 mt-0.5">省略すると無期限になります。キャンペーン期間限定の場合は必ず設定してください。</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-indigo-700 text-white text-xs font-bold rounded-full flex items-center justify-center">4</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">「定期アラートを登録する」ボタンを押す</p>
+                <p class="text-xs text-slate-500 mt-0.5">設定した時刻から8時間、各店舗のダッシュボードに繰り返し表示されます。</p>
+              </div>
+            </li>
+          </ol>
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex gap-2">
+            <span class="material-icons text-sm text-amber-500 flex-shrink-0">lightbulb</span>
+            <span>例：毎週月曜 8:00 に設定 → 月曜8:00〜16:00の間、全店に表示されます。</span>
+          </div>
+        </div>
+
+        <!-- 対象店舗の指定 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+          <h3 class="text-sm font-bold text-slate-700 flex items-center">
+            <span class="material-icons text-indigo-600 text-base mr-2">store</span>対象店舗の指定について
+          </h3>
+          <div class="space-y-2 text-xs text-slate-600">
+            <div class="flex gap-2 items-start">
+              <span class="font-bold text-indigo-700 w-16 flex-shrink-0">全店</span>
+              <span>登録されている全店舗に配信します。</span>
+            </div>
+            <div class="flex gap-2 items-start">
+              <span class="font-bold text-indigo-700 w-16 flex-shrink-0">東北</span>
+              <span>岩手・秋田・宮城・山形の店舗に配信します。</span>
+            </div>
+            <div class="flex gap-2 items-start">
+              <span class="font-bold text-indigo-700 w-16 flex-shrink-0">関東</span>
+              <span>神奈川・東京・群馬・栃木・埼玉の店舗に配信します。</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 配信停止の方法 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+          <h3 class="text-sm font-bold text-slate-700 flex items-center">
+            <span class="material-icons text-indigo-600 text-base mr-2">stop_circle</span>配信を停止するには
+          </h3>
+          <ol class="space-y-3">
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-slate-400 text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">「配信一覧」タブを開く</p>
+                <p class="text-xs text-slate-500 mt-0.5">配信中・有効なアラートが一覧表示されます。</p>
+              </div>
+            </li>
+            <li class="flex gap-3">
+              <span class="flex-shrink-0 w-6 h-6 bg-slate-400 text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
+              <div>
+                <p class="text-xs font-bold text-slate-700">停止したいアラートの「停止」ボタンを押す</p>
+                <p class="text-xs text-slate-500 mt-0.5">即座に全店舗からアラートが非表示になります。</p>
+              </div>
+            </li>
+          </ol>
+          <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800 flex gap-2">
+            <span class="material-icons text-sm text-red-500 flex-shrink-0">warning</span>
+            <span>誤送信した場合はすぐに「配信一覧」から停止してください。停止後は店舗側に即反映されます。</span>
+          </div>
+        </div>
+
+      </div><!-- /hq-panel-guide -->
 
     </div>
   </div>
@@ -2966,7 +3144,7 @@
     };
 
     window.switchHQTab = function (tab) {
-      ['send', 'schedule', 'list'].forEach(t => {
+      ['send', 'schedule', 'list', 'guide'].forEach(t => {
         const btn   = document.getElementById('hq-tab-' + t);
         const panel = document.getElementById('hq-panel-' + t);
         const active = (t === tab);
