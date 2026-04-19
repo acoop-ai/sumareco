@@ -1014,23 +1014,34 @@
             </select>
           </div>
 
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">繰り返し曜日 <span class="text-red-500">*</span></label>
+            <div class="border border-slate-200 rounded-lg p-3 bg-white">
+              <label class="flex items-center gap-2 cursor-pointer pb-2 border-b border-slate-100 mb-2">
+                <input type="checkbox" id="hqs-repeat-all" class="accent-indigo-600 w-4 h-4" onchange="window.hqRepeatToggleAll(this.checked)">
+                <span class="text-xs font-bold text-indigo-700">毎日</span>
+              </label>
+              <div class="grid grid-cols-4 gap-y-2 gap-x-1">
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="hqs-repeat-day accent-indigo-600 w-4 h-4" value="毎週月" onchange="window.hqRepeatDayChange()"><span class="text-xs text-slate-700">月</span></label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="hqs-repeat-day accent-indigo-600 w-4 h-4" value="毎週火" onchange="window.hqRepeatDayChange()"><span class="text-xs text-slate-700">火</span></label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="hqs-repeat-day accent-indigo-600 w-4 h-4" value="毎週水" onchange="window.hqRepeatDayChange()"><span class="text-xs text-slate-700">水</span></label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="hqs-repeat-day accent-indigo-600 w-4 h-4" value="毎週木" onchange="window.hqRepeatDayChange()"><span class="text-xs text-slate-700">木</span></label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="hqs-repeat-day accent-indigo-600 w-4 h-4" value="毎週金" onchange="window.hqRepeatDayChange()"><span class="text-xs text-slate-700">金</span></label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="hqs-repeat-day accent-indigo-600 w-4 h-4" value="毎週土" onchange="window.hqRepeatDayChange()"><span class="text-xs text-slate-700">土</span></label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="hqs-repeat-day accent-indigo-600 w-4 h-4" value="毎週日" onchange="window.hqRepeatDayChange()"><span class="text-xs text-slate-700">日</span></label>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs font-bold text-slate-500 block mb-1">繰り返し <span class="text-red-500">*</span></label>
-              <select id="hqs-repeat" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
-                <option value="毎日">毎日</option>
-                <option value="毎週月">毎週月曜</option>
-                <option value="毎週火">毎週火曜</option>
-                <option value="毎週水">毎週水曜</option>
-                <option value="毎週木">毎週木曜</option>
-                <option value="毎週金">毎週金曜</option>
-                <option value="毎週土">毎週土曜</option>
-                <option value="毎週日">毎週日曜</option>
-              </select>
+              <label class="text-xs font-bold text-slate-500 block mb-1">配信開始時刻 <span class="text-red-500">*</span></label>
+              <input id="hqs-time" type="time" value="08:00"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
             </div>
             <div>
-              <label class="text-xs font-bold text-slate-500 block mb-1">配信時刻 <span class="text-red-500">*</span></label>
-              <input id="hqs-time" type="time" value="08:00"
+              <label class="text-xs font-bold text-slate-500 block mb-1">配信終了時刻 <span class="text-red-500">*</span></label>
+              <input id="hqs-endtime" type="time" value="20:00"
                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
             </div>
           </div>
@@ -1043,7 +1054,7 @@
 
           <div class="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-xs text-indigo-700">
             <span class="material-icons text-xs align-middle mr-1">info</span>
-            配信時刻から8時間、各店舗の画面に表示されます。
+            配信開始〜終了時刻の間、各店舗の画面に表示されます。有効期限を空欄にすると無期限で繰り返します。
           </div>
 
           <button onclick="window.submitHQSchedule()"
@@ -3188,6 +3199,22 @@
         .filter(cb => cb.checked).map(cb => cb.value);
       return checked.length === 0 ? '全店' : checked.join(',');
     }
+    // 繰り返し曜日チェックボックス ヘルパー
+    function getHQRepeatValue() {
+      const allCb = document.getElementById('hqs-repeat-all');
+      if (allCb && allCb.checked) return '毎日';
+      const days = [...document.querySelectorAll('.hqs-repeat-day')]
+        .filter(cb => cb.checked).map(cb => cb.value);
+      return days.join(',');
+    }
+    window.hqRepeatToggleAll = function(checked) {
+      document.querySelectorAll('.hqs-repeat-day').forEach(cb => { cb.checked = checked; });
+    };
+    window.hqRepeatDayChange = function() {
+      const all = [...document.querySelectorAll('.hqs-repeat-day')];
+      document.getElementById('hqs-repeat-all').checked = all.every(cb => cb.checked);
+    };
+
     window.hqTargetToggleAll = function(prefix, checked) {
       document.querySelectorAll('.' + prefix + '-tg').forEach(cb => { cb.checked = checked; });
     };
@@ -3240,18 +3267,25 @@
       const msg        = document.getElementById('hqs-msg').value.trim();
       const target     = getHQTargetValue('hqs-target');
       const level      = document.getElementById('hqs-level').value;
-      const repeat     = document.getElementById('hqs-repeat').value;
-      const repeatTime = document.getElementById('hqs-time').value;
-      const endAt      = document.getElementById('hqs-endat').value;
+      const repeat        = getHQRepeatValue();
+      const repeatTime    = document.getElementById('hqs-time').value;
+      const repeatEndTime = document.getElementById('hqs-endtime').value;
+      const endAt         = document.getElementById('hqs-endat').value;
 
       if (!title || !msg)        { alert('タイトルと本文は必須です。'); return; }
-      if (!repeatTime)           { alert('配信時刻を設定してください。'); return; }
-      if (!confirm(`【確認】\n${repeat} ${repeatTime} に「${title}」を定期配信登録しますか？`)) return;
+      if (!repeat)               { alert('繰り返し曜日を1つ以上選択してください。'); return; }
+      if (!repeatTime)           { alert('配信開始時刻を設定してください。'); return; }
+      if (!repeatEndTime)        { alert('配信終了時刻を設定してください。'); return; }
+      if (repeatTime >= repeatEndTime) { alert('終了時刻は開始時刻より後にしてください。'); return; }
+
+      const repeatLabel = repeat === '毎日' ? '毎日' : repeat.split(',').map(d => d.replace('毎週','')).join('・') + '曜日';
+      const endLabel    = endAt ? `（${endAt}まで）` : '（無期限）';
+      if (!confirm(`【確認】\n${repeatLabel} ${repeatTime}〜${repeatEndTime} に「${title}」を定期配信登録しますか？${endLabel}`)) return;
 
       try {
         await doWithLoading('登録中...', callGAS('submitHQAlert', {
           title, msg, target, level, type: '定期',
-          repeat, repeatTime,
+          repeat, repeatTime, repeatEndTime,
           endAt: endAt || ''
         }));
         alert('定期アラートを登録しました。');
