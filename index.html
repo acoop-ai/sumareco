@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -1530,14 +1529,36 @@
     };
 
     let idToken = null;
+    let tokenRefreshTimer = null; // IDトークン自動リフレッシュ用タイマー
     let audioChunks = [],
       mediaRecorder = null,
       recTime = 0,
       recTimerInterval = null,
       images = [],
       mapInstance = null;
+    let isRecordingBusy = false; // 録音開始/停止処理中フラグ（多重操作防止）
     const DAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
     let myShopName = localStorage.getItem('my_shop_name');
+
+    // ============================================================
+    //  IDトークン自動リフレッシュ
+    //  Google IDトークンは1時間で期限切れになるため、
+    //  期限10分前にサイレントリフレッシュを試みる
+    // ============================================================
+    function scheduleTokenRefresh(expUnix) {
+      if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+      const refreshAt = expUnix * 1000 - (10 * 60 * 1000); // 期限10分前
+      const delay = Math.max(refreshAt - Date.now(), 0);
+      tokenRefreshTimer = setTimeout(() => {
+        if (typeof google !== 'undefined' && google.accounts) {
+          google.accounts.id.prompt(notification => {
+            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+              console.warn('⚠️ セッションの自動更新ができませんでした。エラーが続く場合はページを再読み込みして再ログインしてください。');
+            }
+          });
+        }
+      }, delay);
+    }
 
     // ===== GAS通信 (fetch版) =====
     async function callGAS(action, data = {}) {
@@ -1698,6 +1719,8 @@
       try {
         // ドメインチェック (JWTペイロードから email を読み取る)
         const payload = JSON.parse(atob(idToken.split('.')[1]));
+        // IDトークン自動リフレッシュをスケジュール（期限10分前）
+        scheduleTokenRefresh(payload.exp);
         const email = payload.email || '';
         const domain = email.split('@')[1] || '';
         if (!CONFIG.ALLOWED_DOMAINS.includes(domain)) {
@@ -1767,6 +1790,8 @@
     window.signOut = function () {
       if (!confirm('サインアウトしますか？')) return;
       idToken = null;
+      // トークン自動リフレッシュタイマーをクリア
+      if (tokenRefreshTimer) { clearTimeout(tokenRefreshTimer); tokenRefreshTimer = null; }
       document.getElementById('screen-home').classList.add('hidden');
       document.getElementById('screen-login').classList.remove('hidden');
       // GISのセッションをリセット
@@ -1844,21 +1869,33 @@
       ;
 
     window.toggleRecord = async function () {
+      // 多重操作防止（連続タップでの二重録音・競合を防ぐ）
+      if (isRecordingBusy) return;
+
       const btn = document.getElementById('btn-rec');
 
       // 停止処理
       if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
+        isRecordingBusy = true;
+        const rec = mediaRecorder;
+        mediaRecorder = null; // グローバル参照を即時クリア
+        // マイクリソースを即時解放（onstop の非同期完了を待たない）
+        if (rec.stream) {
+          rec.stream.getTracks().forEach(t => t.stop());
+        }
+        rec.stop(); // ondataavailable + onstop は非同期で発火（chunks は正常に回収される）
         if (recTimerInterval) clearInterval(recTimerInterval);
         recTimerInterval = null;
         btn.classList.remove('btn-recording');
         document.getElementById('rec-status').innerText = "一時停止";
         updateBtns(true);
+        isRecordingBusy = false;
       }
 
       else {
 
         // 開始処理
+        isRecordingBusy = true;
         try {
           if (!navigator.mediaDevices) {
             alert("マイク使用不可(HTTPS必須)");
@@ -1874,18 +1911,13 @@
 
           mediaRecorder.ondataavailable = function (e) {
             if (e.data.size > 0) audioChunks.push(e.data);
-          }
-
-            ;
+          };
 
           mediaRecorder.onstop = function () {
-            stream.getTracks().forEach(function (t) {
-              t.stop();
-            });
+            // トラックは停止処理内で既に解放済み。念のため残存トラックを停止
+            stream.getTracks().forEach(t => t.stop());
             btn.classList.remove('btn-recording');
-          }
-
-            ;
+          };
 
           mediaRecorder.start();
           const startTime = Date.now() - (recTime * 1000);
@@ -1910,9 +1942,7 @@
             const m = Math.floor(recTime / 60).toString().padStart(2, '0');
             const s = (recTime % 60).toString().padStart(2, '0');
             document.getElementById('timer').innerText = m + ":" + s;
-          }
-
-            , 1000);
+          }, 1000);
 
           btn.classList.add('btn-recording');
           document.getElementById('rec-status').innerText = "録音中...";
@@ -1921,6 +1951,10 @@
 
         catch (e) {
           alert("マイクエラー: " + e);
+        }
+
+        finally {
+          isRecordingBusy = false;
         }
       }
     }
