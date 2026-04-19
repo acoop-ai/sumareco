@@ -929,24 +929,32 @@
               class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs font-bold text-slate-500 block mb-1">対象店舗</label>
-              <select id="hq-target" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
-                <option value="全店">全店</option>
-                <option value="東北">東北エリア</option>
-                <option value="関東">関東エリア</option>
-              </select>
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">対象店舗 <span class="text-red-500">*</span></label>
+            <div class="border border-slate-200 rounded-lg p-3 bg-white">
+              <label class="flex items-center gap-2 cursor-pointer pb-2 border-b border-slate-100 mb-2">
+                <input type="checkbox" id="hq-target-all" class="accent-indigo-600 w-4 h-4" onchange="window.hqTargetToggleAll('hq-target',this.checked)">
+                <span class="text-xs font-bold text-indigo-700">全店（一括）</span>
+              </label>
+              <div class="grid grid-cols-2 gap-y-2 gap-x-3">
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hq-target-tg accent-indigo-600 w-4 h-4" value="首都圏１G" onchange="window.hqTargetGroupChange('hq-target')"><span class="text-xs text-slate-700">首都圏１G</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hq-target-tg accent-indigo-600 w-4 h-4" value="首都圏２G" onchange="window.hqTargetGroupChange('hq-target')"><span class="text-xs text-slate-700">首都圏２G</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hq-target-tg accent-indigo-600 w-4 h-4" value="北関東JAF" onchange="window.hqTargetGroupChange('hq-target')"><span class="text-xs text-slate-700">北関東JAF</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hq-target-tg accent-indigo-600 w-4 h-4" value="北関東４G" onchange="window.hqTargetGroupChange('hq-target')"><span class="text-xs text-slate-700">北関東４G</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hq-target-tg accent-indigo-600 w-4 h-4" value="北東北" onchange="window.hqTargetGroupChange('hq-target')"><span class="text-xs text-slate-700">北東北</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hq-target-tg accent-indigo-600 w-4 h-4" value="宮城" onchange="window.hqTargetGroupChange('hq-target')"><span class="text-xs text-slate-700">宮城</span></label>
+                <label class="flex items-center gap-2 cursor-pointer col-span-2"><input type="checkbox" class="hq-target-tg accent-indigo-600 w-4 h-4" value="山形" onchange="window.hqTargetGroupChange('hq-target')"><span class="text-xs text-slate-700">山形</span></label>
+              </div>
             </div>
-            <div>
-              <label class="text-xs font-bold text-slate-500 block mb-1">重要度</label>
-              <select id="hq-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
-                <option value="hq">📢 本部通知（ネイビー）</option>
-                <option value="info">ℹ️ 情報（グレー）</option>
-                <option value="warning">⚠️ 注意（オレンジ）</option>
-                <option value="danger">🚨 重要（赤）</option>
-              </select>
-            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">重要度</label>
+            <select id="hq-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+              <option value="hq">📢 本部通知（ネイビー）</option>
+              <option value="info">ℹ️ 情報（グレー）</option>
+              <option value="warning">⚠️ 注意（オレンジ）</option>
+              <option value="danger">🚨 重要（赤）</option>
+            </select>
           </div>
 
           <div>
@@ -979,23 +987,31 @@
               class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs font-bold text-slate-500 block mb-1">対象店舗</label>
-              <select id="hqs-target" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
-                <option value="全店">全店</option>
-                <option value="東北">東北エリア</option>
-                <option value="関東">関東エリア</option>
-              </select>
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">対象店舗 <span class="text-red-500">*</span></label>
+            <div class="border border-slate-200 rounded-lg p-3 bg-white">
+              <label class="flex items-center gap-2 cursor-pointer pb-2 border-b border-slate-100 mb-2">
+                <input type="checkbox" id="hqs-target-all" class="accent-indigo-600 w-4 h-4" onchange="window.hqTargetToggleAll('hqs-target',this.checked)">
+                <span class="text-xs font-bold text-indigo-700">全店（一括）</span>
+              </label>
+              <div class="grid grid-cols-2 gap-y-2 gap-x-3">
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hqs-target-tg accent-indigo-600 w-4 h-4" value="首都圏１G" onchange="window.hqTargetGroupChange('hqs-target')"><span class="text-xs text-slate-700">首都圏１G</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hqs-target-tg accent-indigo-600 w-4 h-4" value="首都圏２G" onchange="window.hqTargetGroupChange('hqs-target')"><span class="text-xs text-slate-700">首都圏２G</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hqs-target-tg accent-indigo-600 w-4 h-4" value="北関東JAF" onchange="window.hqTargetGroupChange('hqs-target')"><span class="text-xs text-slate-700">北関東JAF</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hqs-target-tg accent-indigo-600 w-4 h-4" value="北関東４G" onchange="window.hqTargetGroupChange('hqs-target')"><span class="text-xs text-slate-700">北関東４G</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hqs-target-tg accent-indigo-600 w-4 h-4" value="北東北" onchange="window.hqTargetGroupChange('hqs-target')"><span class="text-xs text-slate-700">北東北</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="hqs-target-tg accent-indigo-600 w-4 h-4" value="宮城" onchange="window.hqTargetGroupChange('hqs-target')"><span class="text-xs text-slate-700">宮城</span></label>
+                <label class="flex items-center gap-2 cursor-pointer col-span-2"><input type="checkbox" class="hqs-target-tg accent-indigo-600 w-4 h-4" value="山形" onchange="window.hqTargetGroupChange('hqs-target')"><span class="text-xs text-slate-700">山形</span></label>
+              </div>
             </div>
-            <div>
-              <label class="text-xs font-bold text-slate-500 block mb-1">重要度</label>
-              <select id="hqs-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
-                <option value="hq">📢 本部通知</option>
-                <option value="info">ℹ️ 情報</option>
-                <option value="warning">⚠️ 注意</option>
-              </select>
-            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-500 block mb-1">重要度</label>
+            <select id="hqs-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+              <option value="hq">📢 本部通知</option>
+              <option value="info">ℹ️ 情報</option>
+              <option value="warning">⚠️ 注意</option>
+            </select>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -1179,18 +1195,39 @@
           <h3 class="text-sm font-bold text-slate-700 flex items-center">
             <span class="material-icons text-indigo-600 text-base mr-2">store</span>対象店舗の指定について
           </h3>
-          <div class="space-y-2 text-xs text-slate-600">
-            <div class="flex gap-2 items-start">
-              <span class="font-bold text-indigo-700 w-16 flex-shrink-0">全店</span>
+          <p class="text-xs text-slate-500">グループを複数選択できます。「全店（一括）」をチェックすると全グループが対象になります。</p>
+          <div class="space-y-1.5 text-xs text-slate-600">
+            <div class="flex gap-2 items-start p-2 bg-indigo-50 rounded-lg">
+              <span class="font-bold text-indigo-700 w-20 flex-shrink-0">全店（一括）</span>
               <span>登録されている全店舗に配信します。</span>
             </div>
-            <div class="flex gap-2 items-start">
-              <span class="font-bold text-indigo-700 w-16 flex-shrink-0">東北</span>
-              <span>岩手・秋田・宮城・山形の店舗に配信します。</span>
+            <div class="flex gap-2 items-start p-2 rounded-lg hover:bg-slate-50">
+              <span class="font-bold text-slate-700 w-20 flex-shrink-0">首都圏１G</span>
+              <span>神奈川（相模原・横浜・横須賀・湯河原・平塚）エリアの店舗</span>
             </div>
-            <div class="flex gap-2 items-start">
-              <span class="font-bold text-indigo-700 w-16 flex-shrink-0">関東</span>
-              <span>神奈川・東京・群馬・栃木・埼玉の店舗に配信します。</span>
+            <div class="flex gap-2 items-start p-2 rounded-lg hover:bg-slate-50">
+              <span class="font-bold text-slate-700 w-20 flex-shrink-0">首都圏２G</span>
+              <span>神奈川（横浜緑区・横須賀・藤沢・箱根）エリアの店舗</span>
+            </div>
+            <div class="flex gap-2 items-start p-2 rounded-lg hover:bg-slate-50">
+              <span class="font-bold text-slate-700 w-20 flex-shrink-0">北関東JAF</span>
+              <span>群馬県のJAファーマーズ各店舗</span>
+            </div>
+            <div class="flex gap-2 items-start p-2 rounded-lg hover:bg-slate-50">
+              <span class="font-bold text-slate-700 w-20 flex-shrink-0">北関東４G</span>
+              <span>群馬県のAコープ・新鮮ぐんま各店舗</span>
+            </div>
+            <div class="flex gap-2 items-start p-2 rounded-lg hover:bg-slate-50">
+              <span class="font-bold text-slate-700 w-20 flex-shrink-0">北東北</span>
+              <span>岩手・秋田エリアの店舗</span>
+            </div>
+            <div class="flex gap-2 items-start p-2 rounded-lg hover:bg-slate-50">
+              <span class="font-bold text-slate-700 w-20 flex-shrink-0">宮城</span>
+              <span>宮城県エリアの店舗</span>
+            </div>
+            <div class="flex gap-2 items-start p-2 rounded-lg hover:bg-slate-50">
+              <span class="font-bold text-slate-700 w-20 flex-shrink-0">山形</span>
+              <span>山形県エリアの店舗</span>
             </div>
           </div>
         </div>
@@ -3143,6 +3180,22 @@
       document.getElementById('hq-admin-screen').classList.add('hidden');
     };
 
+    // 対象店舗チェックボックス ヘルパー
+    function getHQTargetValue(prefix) {
+      const allCb = document.getElementById(prefix + '-all');
+      if (allCb && allCb.checked) return '全店';
+      const checked = [...document.querySelectorAll('.' + prefix + '-tg')]
+        .filter(cb => cb.checked).map(cb => cb.value);
+      return checked.length === 0 ? '全店' : checked.join(',');
+    }
+    window.hqTargetToggleAll = function(prefix, checked) {
+      document.querySelectorAll('.' + prefix + '-tg').forEach(cb => { cb.checked = checked; });
+    };
+    window.hqTargetGroupChange = function(prefix) {
+      const all = [...document.querySelectorAll('.' + prefix + '-tg')];
+      document.getElementById(prefix + '-all').checked = all.every(cb => cb.checked);
+    };
+
     window.switchHQTab = function (tab) {
       ['send', 'schedule', 'list', 'guide'].forEach(t => {
         const btn   = document.getElementById('hq-tab-' + t);
@@ -3160,7 +3213,7 @@
     window.submitHQAlert = async function () {
       const title  = document.getElementById('hq-title').value.trim();
       const msg    = document.getElementById('hq-msg').value.trim();
-      const target = document.getElementById('hq-target').value;
+      const target = getHQTargetValue('hq-target');
       const level  = document.getElementById('hq-level').value;
       const endAt  = document.getElementById('hq-endat').value;
 
@@ -3185,7 +3238,7 @@
     window.submitHQSchedule = async function () {
       const title      = document.getElementById('hqs-title').value.trim();
       const msg        = document.getElementById('hqs-msg').value.trim();
-      const target     = document.getElementById('hqs-target').value;
+      const target     = getHQTargetValue('hqs-target');
       const level      = document.getElementById('hqs-level').value;
       const repeat     = document.getElementById('hqs-repeat').value;
       const repeatTime = document.getElementById('hqs-time').value;
