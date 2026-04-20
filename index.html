@@ -633,6 +633,9 @@
         class="text-xs font-bold text-slate-500">メニュー</span><button onclick="window.toggleMenu()"
         class="text-slate-400 p-1"><span class="material-icons text-lg">close</span></button></div>
     <div id="admin-menu-scroll" class="max-h-[70vh] overflow-y-auto">
+      <!-- ご利用説明書（最上部に配置） --><button onclick="window.showManual()"
+        class="w-full text-left px-4 py-3 text-sm hover:bg-blue-50 text-blue-700 flex items-center font-bold bg-blue-50/40 border-b border-blue-100"><span
+          class="material-icons text-lg mr-3">help_outline</span>ご利用説明書</button>
       <!-- マイ店舗設定 --><button onclick="window.setMyShop()"
         class="w-full text-left px-4 py-3 text-sm hover:bg-orange-50 text-orange-700 flex items-center font-bold bg-orange-50/30 border-b border-orange-100"><span
           class="material-icons text-lg mr-3">storefront</span>マイ店舗を設定</button><button
@@ -654,9 +657,7 @@
         class="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 text-slate-700 flex items-center"><span
           class="material-icons text-lg mr-3">folder_shared</span>今月のレポート一覧</button><button onclick="window.showHelp()"
         class="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 text-blue-600 flex items-center border-t border-slate-100"><span
-          class="material-icons text-lg mr-3">menu_book</span>天気情報の見方</button><button onclick="window.showManual()"
-        class="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 text-blue-600 flex items-center"><span
-          class="material-icons text-lg mr-3">help_outline</span>ご利用説明書</button><button
+          class="material-icons text-lg mr-3">menu_book</span>天気情報の見方</button><button
         onclick="document.getElementById('pwa-guide').classList.toggle('hidden'); window.toggleMenu();"
         class="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 text-blue-600 flex items-center"><span
           class="material-icons text-lg mr-3">install_mobile</span>アプリ化ガイド</button>
@@ -1380,7 +1381,9 @@
             <a href="javascript:void(0)" onclick="window.scrollToManualSection('sec8')"><span
                 class="num">08</span>メニュー一覧</a>
             <a href="javascript:void(0)" onclick="window.scrollToManualSection('sec9')"><span
-                class="num">09</span>困ったときは</a>
+                class="num">09</span>本部配信管理</a>
+            <a href="javascript:void(0)" onclick="window.scrollToManualSection('sec10')"><span
+                class="num">10</span>困ったときは</a>
           </div>
         </div>
 
@@ -1864,9 +1867,68 @@
           </table>
         </section>
 
-        <!-- ═══════════════════ SEC 9 ═══════════════════ -->
+        <!-- ═══════════════════ SEC 9（本部配信管理） ═══════════════════ -->
         <section id="sec9">
-          <h2><span class="sec-num">09</span> 困ったときは</h2>
+          <h2><span class="sec-num">09</span> 本部配信管理（本部向け機能）</h2>
+          <p><strong>HQ_ADMIN権限を持つ本部ユーザー</strong>が、全店舗または特定グループに対して一斉メッセージを配信できる機能です。画面右上のメニューから「<strong>本部配信管理</strong>」を選択してアクセスします。</p>
+
+          <h3>4つのタブ構成</h3>
+          <ol class="step-list">
+            <li><strong>今すぐ送る（即時配信）</strong> — タイトル・本文・対象店舗・重要度を入力し、即座に配信。送信時点の対象店舗ダッシュボードにすぐ反映されます。</li>
+            <li><strong>定期スケジュール（定期配信）</strong> — 曜日・開始／終了時刻・有効期限を設定し、繰り返し自動配信。棚卸しや清掃リマインダー等に利用。</li>
+            <li><strong>配信一覧</strong> — 現在配信中・予定中・配信済・停止済みのすべてのアラートを確認。各カードから<strong>編集</strong>・<strong>停止</strong>が可能。</li>
+            <li><strong>使い方ガイド</strong> — アプリ内でも操作手順と重要度の使い分けを随時確認できます。</li>
+          </ol>
+
+          <h3>重要度レベルの使い分け（4種類）</h3>
+          <table class="ref-table">
+            <tr>
+              <th style="width:150px;">レベル</th>
+              <th>用途</th>
+            </tr>
+            <tr>
+              <td>📢 <strong>本部通知（ネイビー）</strong></td>
+              <td>棚卸し・新商品導入・研修案内など、日常的な本部からのお知らせ。</td>
+            </tr>
+            <tr>
+              <td>ℹ️ <strong>情報（ブルー）</strong></td>
+              <td>キャンペーン告知・販促情報など、参考として共有したい情報。</td>
+            </tr>
+            <tr>
+              <td>⚠️ <strong>注意（オレンジ）</strong></td>
+              <td>食品の自主回収・設備点検依頼など、対応が必要な注意事項。</td>
+            </tr>
+            <tr>
+              <td>🚨 <strong>重要（レッド）</strong></td>
+              <td>緊急閉店・重大クレーム・即時対応が必要な緊急連絡。即時配信・定期配信いずれも選択可能。</td>
+            </tr>
+          </table>
+
+          <h3>対象店舗の指定</h3>
+          <p>「全店（一括）」または7グループ（首都圏１G／首都圏２G／北関東JAF／北関東４G／北東北／宮城／山形）から複数選択できます。全グループにチェックを入れると自動的に「全店」扱いになります。</p>
+
+          <h3>配信一覧からの編集・停止</h3>
+          <ol class="step-list">
+            <li>「<strong>配信一覧</strong>」タブを開く。</li>
+            <li>各アラートカードの下部にある<strong>「編集」</strong>ボタンをタップ → 編集モーダルが下から表示されます。</li>
+            <li>タイトル・本文・対象店舗・重要度、および即時／定期に応じた表示期限や繰り返し条件を変更し、<strong>「変更を保存する」</strong>をタップ。</li>
+            <li>配信中のものを取り下げる場合は<strong>「停止」</strong>ボタン。停止後は店舗側に即反映されます。</li>
+          </ol>
+
+          <div class="tip-box">
+            <div class="title">⚠️ 誤送信時の対応</div>
+            <p>誤った内容で配信してしまった場合は、すぐに「配信一覧」から<strong>停止</strong>するか、<strong>編集</strong>で内容を修正してください。停止・変更は即時反映されます。</p>
+          </div>
+
+          <div class="tip-box info">
+            <div class="title">💡 配信のコツ</div>
+            <p>定期配信は「開始時刻〜終了時刻」の間だけ店舗ダッシュボードに表示されます（例：08:00〜16:00）。長期キャンペーンの場合は<strong>有効期限</strong>を必ず設定し、古い通知が残らないようにしてください。</p>
+          </div>
+        </section>
+
+        <!-- ═══════════════════ SEC 10 ═══════════════════ -->
+        <section id="sec10">
+          <h2><span class="sec-num">10</span> 困ったときは</h2>
           <table class="ref-table">
             <tr>
               <th style="width:200px;">お悩み</th>
