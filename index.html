@@ -725,18 +725,19 @@
       </div>
       <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
         <p class="text-xs text-slate-500 text-center mb-4">会社のGoogleアカウントでログイン</p>
-        <div id="g_id_onload"
-          data-client_id="1072945615483-74jadmaet56chvhkfh2cpt4ae9dvh140.apps.googleusercontent.com"
-          data-callback="handleCredentialResponse"
-          data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin flex justify-center"
-          data-type="standard"
-          data-size="large"
-          data-theme="outline"
-          data-text="sign_in_with"
-          data-shape="rectangular"
-          data-locale="ja">
+        <!-- v2.x: OAuth2 ワンフロー認証へ移行（旧 g_id_signin を廃止） -->
+        <div class="flex justify-center">
+          <button id="google-login-btn" type="button"
+            class="inline-flex items-center justify-center gap-2 w-full max-w-[280px] px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-md text-sm font-medium hover:bg-slate-50 hover:shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg class="w-[18px] h-[18px]" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              <path fill="none" d="M0 0h48v48H0z"/>
+            </svg>
+            <span>Googleでログイン</span>
+          </button>
         </div>
         <p id="login-error" class="hidden mt-3 text-xs text-red-600 text-center font-bold"></p>
       </div>
@@ -1987,12 +1988,15 @@
     const CONFIG = {
       GAS_URL: 'https://script.google.com/macros/s/AKfycbxp-7ikuSC5_-uSalwdRshj6KxHKo30QieRW8j4cU__Dg0cmSIs9NZuCDRqUB2zJEo/exec',
       GOOGLE_CLIENT_ID: '1072945615483-74jadmaet56chvhkfh2cpt4ae9dvh140.apps.googleusercontent.com',
-      ALLOWED_DOMAINS: ['jaz-acoop.co.jp', 'acoop1.jp', 'acoop2.jp', 'acoop3.jp'],
+      ALLOWED_DOMAINS: ['jaz-acoop.co.jp', 'jaz-acoop1.jp', 'jaz-acoop2.jp', 'jaz-acoop3.jp'],
     };
 
-    let idToken = null;
-    let userRole = null; // ログイン中ユーザーのロール（HQ_ADMINかどうかの判定に使用）
-    let tokenRefreshTimer = null; // IDトークン自動リフレッシュ用タイマー
+    // v2.x: ID トークン経路を廃止し OAuth2 アクセストークンに一本化
+    let currentAccessToken = null;
+    let accessTokenExpiry = 0;          // unix ms
+    let oauthTokenClient = null;        // GIS OAuth2 token client
+    let userRole = null;                // ログイン中ユーザーのロール（HQ_ADMIN判定用）
+    let tokenRefreshTimer = null;       // アクセストークン自動更新タイマー
     let audioChunks = [],
       mediaRecorder = null,
       recTime = 0,
@@ -2008,25 +2012,98 @@
     //  Google IDトークンは1時間で期限切れになるため、
     //  期限10分前にサイレントリフレッシュを試みる
     // ============================================================
-    function scheduleTokenRefresh(expUnix) {
-      if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
-      const refreshAt = expUnix * 1000 - (10 * 60 * 1000); // 期限10分前
-      const delay = Math.max(refreshAt - Date.now(), 0);
-      tokenRefreshTimer = setTimeout(() => {
-        if (typeof google !== 'undefined' && google.accounts) {
-          google.accounts.id.prompt(notification => {
-            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              console.warn('⚠️ セッションの自動更新ができませんでした。エラーが続く場合はページを再読み込みして再ログインしてください。');
-            }
-          });
+    //  v2.x: OAuth2 アクセストークン管理（サイレント更新可）
+    //  - GIS の oauth2.initTokenClient で access_token を取得
+    //  - prompt:'' でユーザー操作なしのサイレント更新
+    //  - 期限の5分前にタイマーで自動更新
+    // ============================================================
+    function ensureOAuthTokenClient_() {
+      if (oauthTokenClient) return;
+      if (!(window.google && google.accounts && google.accounts.oauth2)) {
+        throw new Error('Google Identity Services (oauth2) がロードされていません');
+      }
+      oauthTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CONFIG.GOOGLE_CLIENT_ID,
+        scope: 'openid email profile',
+        callback: () => {}  // requestAccessTokenOnce_ で都度上書き
+      });
+    }
+
+    function requestAccessTokenOnce_(opts) {
+      return new Promise((resolve, reject) => {
+        try { ensureOAuthTokenClient_(); } catch (e) { return reject(e); }
+        const isSilent = !!(opts && opts.silent);
+        let settled = false;
+        let guard = null;
+        if (isSilent) {
+          guard = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error('OAuth2 silent token acquisition timed out (10s)'));
+          }, 10000);
         }
-      }, delay);
+        oauthTokenClient.callback = (resp) => {
+          if (settled) return;
+          settled = true;
+          if (guard) clearTimeout(guard);
+          if (!resp) return reject(new Error('empty oauth2 response'));
+          if (resp.error) return reject(new Error(resp.error_description || resp.error));
+          if (!resp.access_token) return reject(new Error('no access_token in response'));
+          currentAccessToken = resp.access_token;
+          const expiresIn = Number(resp.expires_in) || 3600;
+          accessTokenExpiry = Date.now() + (expiresIn - 30) * 1000;
+          scheduleAccessTokenRefresh_(expiresIn);
+          resolve(resp);
+        };
+        try {
+          const req = {};
+          if (isSilent) req.prompt = '';
+          if (opts && opts.login_hint) req.hint = opts.login_hint;
+          oauthTokenClient.requestAccessToken(req);
+        } catch (e) {
+          if (settled) return;
+          settled = true;
+          if (guard) clearTimeout(guard);
+          reject(e);
+        }
+      });
+    }
+
+    function scheduleAccessTokenRefresh_(expiresInSec) {
+      if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+      const refreshAfter = Math.min(
+        Math.max((expiresInSec - 5 * 60) * 1000, 5000),
+        55 * 60 * 1000
+      );
+      tokenRefreshTimer = setTimeout(async () => {
+        try {
+          await requestAccessTokenOnce_({ silent: true });
+          console.log('🔄 アクセストークンを自動更新しました');
+        } catch (e) {
+          console.warn('silent token refresh failed:', e);
+        }
+      }, refreshAfter);
+    }
+
+    // userinfo エンドポイントから email/name を取得
+    async function fetchUserInfo_() {
+      if (!currentAccessToken) throw new Error('access_token 未取得');
+      const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + currentAccessToken }
+      });
+      if (!res.ok) throw new Error('userinfo HTTP ' + res.status);
+      return await res.json();
     }
 
     // ===== GAS通信 (fetch版) =====
     async function callGAS(action, data = {}) {
-      if (!idToken) throw new Error('未ログインです');
-      const payload = { action, idToken, ...data };
+      if (!currentAccessToken) throw new Error('未ログインです');
+      // 期限切れ間近ならサイレント更新を試みる
+      if (accessTokenExpiry && Date.now() > accessTokenExpiry - 60 * 1000) {
+        try { await requestAccessTokenOnce_({ silent: true }); }
+        catch (e) { console.warn('inline token refresh failed; will try with stale token:', e); }
+      }
+      const payload = { action, accessToken: currentAccessToken, ...data };
       const res = await fetch(CONFIG.GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
@@ -2213,44 +2290,70 @@
 
       ;
 
-    // Google Sign-In コールバック
-    window.handleCredentialResponse = async function (response) {
-      idToken = response.credential;
+    // ============================================================
+    //  v2.x: OAuth2 ワンフロー認証
+    //  - Google Sign-In（id token）経路を完全廃止
+    //  - access_token 取得 → userinfo で email/name 取得 → ドメイン照合
+    //  - 初回は同意ダイアログ1回、2回目以降は silent grant でポップアップなし
+    // ============================================================
+    window.loginWithOAuth2_ = async function ({ silent = false } = {}) {
       const errEl = document.getElementById('login-error');
-      errEl.classList.add('hidden');
+      const loginBtn = document.getElementById('google-login-btn');
+      const overlay = document.getElementById('loading-overlay');
       try {
-        // ドメインチェック (JWTペイロードから email を読み取る)
-        const payload = JSON.parse(atob(idToken.split('.')[1]));
-        // IDトークン自動リフレッシュをスケジュール（期限10分前）
-        scheduleTokenRefresh(payload.exp);
-        const email = payload.email || '';
+        if (errEl) errEl.classList.add('hidden');
+        if (loginBtn && !silent) loginBtn.disabled = true;
+
+        // 1. アクセストークン取得（silent: false なら同意ポップアップ許容）
+        await requestAccessTokenOnce_({ silent });
+
+        // 2. userinfo でメール・氏名を取得
+        const userinfo = await fetchUserInfo_();
+        const email  = userinfo.email || '';
         const domain = email.split('@')[1] || '';
+
+        // 3. クライアント側ドメインチェック（GAS 側でも再検証される）
         if (!CONFIG.ALLOWED_DOMAINS.includes(domain)) {
-          idToken = null;
-          errEl.textContent = '社内ドメインのアカウントでログインしてください。';
-          errEl.classList.remove('hidden');
-          return;
+          if (errEl && !silent) {
+            errEl.textContent = '社内ドメインのアカウントでログインしてください。';
+            errEl.classList.remove('hidden');
+          }
+          currentAccessToken = null;
+          accessTokenExpiry = 0;
+          if (tokenRefreshTimer) { clearTimeout(tokenRefreshTimer); tokenRefreshTimer = null; }
+          return false;
         }
-        // GASからプロフィール取得
-        const overlay = document.getElementById('loading-overlay');
-        overlay.style.display = 'flex';
+
+        // 4. GASからプロフィール取得
+        if (overlay) overlay.style.display = 'flex';
         const user = await callGAS('getProfile');
-        overlay.style.display = 'none';
+        if (overlay) overlay.style.display = 'none';
         if (!user) throw new Error('プロフィール取得失敗');
         if (user.error && !user.registered === false) throw new Error(user.error);
+
         // 未登録ユーザー → 初回登録画面へ
         if (user.registered === false) {
           document.getElementById('screen-login').classList.add('hidden');
           document.getElementById('register-title').textContent = 'はじめに設定してください';
           await window.openRegisterScreen();
-          return;
+          return true;
         }
         window.initApp(user);
+        return true;
       } catch (e) {
-        idToken = null;
-        document.getElementById('loading-overlay').style.display = 'none';
-        errEl.textContent = 'ログインエラー: ' + e.message;
-        errEl.classList.remove('hidden');
+        if (overlay) overlay.style.display = 'none';
+        currentAccessToken = null;
+        accessTokenExpiry = 0;
+        if (!silent) {
+          console.error('OAuth2 login failed:', e);
+          if (errEl) {
+            errEl.textContent = 'ログインエラー: ' + (e && e.message || e);
+            errEl.classList.remove('hidden');
+          }
+        }
+        return false;
+      } finally {
+        if (loginBtn) loginBtn.disabled = false;
       }
     };
 
@@ -2313,15 +2416,15 @@
 
     window.signOut = function () {
       if (!confirm('サインアウトしますか？')) return;
-      idToken = null;
-      // トークン自動リフレッシュタイマーをクリア
+      // v2.x: OAuth2 トークンと自動更新タイマーを破棄
+      if (currentAccessToken && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+        try { google.accounts.oauth2.revoke(currentAccessToken, () => {}); } catch (_) {}
+      }
+      currentAccessToken = null;
+      accessTokenExpiry = 0;
       if (tokenRefreshTimer) { clearTimeout(tokenRefreshTimer); tokenRefreshTimer = null; }
       document.getElementById('screen-home').classList.add('hidden');
       document.getElementById('screen-login').classList.remove('hidden');
-      // GISのセッションをリセット
-      if (typeof google !== 'undefined' && google.accounts) {
-        google.accounts.id.disableAutoSelect();
-      }
     };
 
     window.toggleMenu = function () {
@@ -3560,19 +3663,21 @@
       return String(str).normalize('NFKC').replace(/[\s\u3000]+/g, "").trim().toLowerCase();
     }
 
-    // GIS初期化 (DOMロード後)
+    // v2.x: OAuth2 ボタン配線 + サイレント自動ログイン
     window.addEventListener('load', function () {
-      if (typeof google !== 'undefined' && google.accounts) {
-        google.accounts.id.initialize({
-          client_id: CONFIG.GOOGLE_CLIENT_ID,
-          callback: window.handleCredentialResponse,
-          auto_select: false,
-        });
-        google.accounts.id.renderButton(
-          document.querySelector('.g_id_signin'),
-          { theme: 'outline', size: 'large', locale: 'ja' }
-        );
+      const loginBtn = document.getElementById('google-login-btn');
+      if (loginBtn) {
+        loginBtn.addEventListener('click', () => window.loginWithOAuth2_({ silent: false }));
       }
+      // GIS oauth2 ロード後にサイレントログインを試行（同意済セッションなら自動遷移）
+      const trySilent = (retries = 10) => {
+        if (window.google && google.accounts && google.accounts.oauth2) {
+          window.loginWithOAuth2_({ silent: true }).catch(() => {/* サイレント失敗時は静か */});
+        } else if (retries > 0) {
+          setTimeout(() => trySilent(retries - 1), 300);
+        }
+      };
+      trySilent();
     });
 
   </script>
