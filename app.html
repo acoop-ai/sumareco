@@ -1,6 +1,11 @@
 
 <!DOCTYPE html>
 <!-- スマレコ (SmartRecord) PWA Frontend v77.2
+     v78.0: 店舗内情報共有の導線と保全。①本部/店内の切替を上部タブへ（メニューの奥から出す）
+            ②まとめ・過去のまとめ・記録の原文へ画面から直接たどれるようにし、記録件数は
+              保存の応答に同梱されたボードで即反映（取得の1往復に依存しない）
+            ③カメラ起動中に端末がアプリを終了させても録音と写真を失わないよう
+              IndexedDB へ下書きを自動保存し、起動時に復元する
      v77.2: 店舗内情報共有を店舗ドメインに限定（jaz-acoop2/3 は店舗同格だが店内共有は不可）
      v77.0
      v77.0: 重ね画面の表示中は背後のホーム画面をスクロールさせない（裏でUIが動くのを解消）。
@@ -951,6 +956,19 @@
     </div>
     <!-- Controls -->
     <div class="px-4 -mt-10 z-10 flex-grow flex flex-col space-y-5">
+      <!-- v78.0: 店舗のアカウントは「本部へ報告」と「店内で共有」を上部タブで切り替える。
+           メニューの奥に入れると見つからないため、画面を開いた瞬間に目に入る位置に置く。
+           色は本部＝緑・店内＝ティールで固定し、今どちらに送る記録かを常に示す -->
+      <div id="mode-tabs-home" class="hidden bg-white rounded-2xl shadow-xl p-1.5 flex gap-1.5 border border-slate-200">
+        <button type="button" aria-current="page"
+          class="flex-1 py-3.5 rounded-xl bg-green-700 text-white font-bold text-sm flex items-center justify-center gap-1 shadow">
+          <span class="material-icons text-base">send</span>本部へ報告
+        </button>
+        <button type="button" onclick="window.openInstore()"
+          class="btn-press flex-1 py-3.5 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
+          <span class="material-icons text-base">storefront</span>店内で共有
+        </button>
+      </div>
       <!-- マイ店舗アラート表示エリア -->
       <div id="header-alert-area"
         class="hidden bg-white border-l-4 rounded-r-lg p-3 shadow-md transform transition-all hover:scale-[1.01] cursor-pointer"
@@ -994,11 +1012,11 @@
             class="btn-press flex-1 bg-blue-50 border border-blue-100 rounded-xl py-3 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100"><span
               class="material-icons text-blue-500 mb-1">camera_alt</span><span
               class="text-xs font-bold text-blue-600">カメラ起動</span><input type="file" id="input-camera" accept="image/*"
-              capture="environment" class="hidden" onchange="window.handleImg(this)"></label><label
+              capture="environment" class="hidden" onclick="window.beforeCapture('camera')" onchange="window.handleImg(this)"></label><label
             class="btn-press flex-1 bg-emerald-50 border border-emerald-100 rounded-xl py-3 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-100"><span
               class="material-icons text-emerald-500 mb-1">photo_library</span><span
               class="text-xs font-bold text-emerald-600">アルバム</span><input type="file" id="input-album" accept="image/*"
-              class="hidden" onchange="window.handleImg(this)"></label></div>
+              class="hidden" onclick="window.beforeCapture('album')" onchange="window.handleImg(this)"></label></div>
         <div id="img-preview" class="flex space-x-3 overflow-x-auto hidden pb-2 pl-1 no-scrollbar"></div>
       </div>
       </div><!-- /home-recorder-slot -->
@@ -1610,6 +1628,20 @@
       </div>
     </div>
 
+    <!-- v78.0: ホームと同じ位置・同じ形のタブ。押せば本部への報告画面へ戻る -->
+    <div class="px-4 pt-3 pb-1 bg-teal-50/70">
+      <div class="bg-white rounded-2xl shadow p-1.5 flex gap-1.5 border border-teal-200">
+        <button type="button" onclick="window.closeInstore()"
+          class="btn-press flex-1 py-3.5 rounded-xl bg-green-50 text-green-700 border border-green-200 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
+          <span class="material-icons text-base">send</span>本部へ報告
+        </button>
+        <button type="button" aria-current="page"
+          class="flex-1 py-3.5 rounded-xl bg-teal-700 text-white font-bold text-sm flex items-center justify-center gap-1 shadow">
+          <span class="material-icons text-base">storefront</span>店内で共有
+        </button>
+      </div>
+    </div>
+
     <div class="flex-grow overflow-y-auto p-4 space-y-5 pb-24">
       <details class="bg-white border border-slate-200 rounded-xl">
         <summary class="px-4 py-3 text-xs font-bold text-slate-600 cursor-pointer select-none">📖 使い方（開店前 → ミーティング → 部門共有 → 本部提出）</summary>
@@ -1623,18 +1655,25 @@
         </div>
       </details>
 
-      <!-- v76.3: ミーティング資料への入口は画面上部に置く（下部固定バーは誤タップしやすいため） -->
-      <div id="instore-meeting-card" class="hidden bg-teal-50 border border-teal-200 rounded-xl p-4">
+      <!-- v76.3: ミーティング資料への入口は画面上部に置く（下部固定バーは誤タップしやすいため）
+           v78.0: まとめが未作成のときも必ず表示する。隠すと「まとめがどこにあるか分からない」ため。
+                  過去のまとめもこのカードから辿れるようにし、資料への入口を1か所にまとめる -->
+      <div id="instore-meeting-card" class="bg-white border-2 border-teal-300 rounded-xl p-4 shadow-sm">
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
             <div class="text-xs font-bold text-teal-800 flex items-center gap-1">
               <span class="material-icons text-sm">description</span>本日のミーティング資料
             </div>
-            <div id="instore-meeting-status" class="text-[11px] text-teal-700 mt-1 break-words"></div>
+            <div id="instore-meeting-status" class="text-[11px] text-teal-700 mt-1 break-words">読み込み中…</div>
           </div>
-          <button onclick="window.openStoreMeetingFromBoard()"
+          <button id="btn-open-meeting" onclick="window.openStoreMeetingFromBoard()"
             class="btn-press flex-shrink-0 text-xs font-bold px-4 py-2.5 rounded-lg bg-teal-700 text-white active:scale-95 transition-transform">開く</button>
         </div>
+        <button onclick="window.toggleStoreHistory()"
+          class="mt-3 w-full text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 rounded-lg py-2.5 flex items-center justify-center gap-1 active:bg-teal-100">
+          <span class="material-icons text-sm">history</span><span id="store-history-label">これまでのまとめを見る</span>
+        </button>
+        <div id="instore-history" class="hidden mt-3 space-y-2"></div>
       </div>
 
       <!-- 録音・写真パネルはホームから移設される -->
@@ -2431,6 +2470,9 @@
       const isStoreUser = _canStoreShare && (!!_currentUserShop && _currentUserShop !== '本部' || _isDevTester);
       const instoreBtn = document.getElementById('btn-instore-entry');
       if (instoreBtn) instoreBtn.classList.toggle('hidden', !isStoreUser);
+      // v78.0: 上部タブも同じ条件で出す（店舗のアカウントのみ）
+      const modeTabs = document.getElementById('mode-tabs-home');
+      if (modeTabs) modeTabs.classList.toggle('hidden', !isStoreUser);
       const instoreMenu = document.getElementById('menu-instore');
       if (instoreMenu) instoreMenu.classList.toggle('hidden', !isStoreUser);
       // v73.2: メニューボタンは全ユーザーに表示（一般ユーザーがマイレポート/天気等に到達できるよう開放）
@@ -2468,7 +2510,10 @@
       if (verHqm) verHqm.textContent = APP_VERSION;
       pushOverlayHistory_();
       // v76.3: 端末に古い版が残っていないか確認する（残っていれば入れ替えを促す）
-      checkForUpdate_();
+      // v78.0: 版の確認が済んでから、残っている下書きの復元を尋ねる
+      //   （読み直しが走る場合は尋ねずに次回へ回す）
+      checkForUpdate_().then(function () { restoreDraftIfAny_(); },
+                             function () { restoreDraftIfAny_(); });
     };
 
     // HQアラートを完了として記録・画面から消す
@@ -2825,6 +2870,9 @@
         document.getElementById('rec-status').innerText = "一時停止";
         updateBtns(true);
         isRecordingBusy = false;
+        // v78.0: 止めた時点で端末に残す（この後カメラを使っても失わない）
+        _draftAudioMime = currentAudioMime_();
+        setTimeout(function () { saveDraft_('recorded'); }, 0);
       }
 
       else {
@@ -2902,14 +2950,154 @@
       document.getElementById('btn-clear').disabled = !on;
     }
 
+    // ============================================================
+    // v78.0: 録音・写真の下書きを端末に自動保存する
+    //   カメラを起動している間、端末はメモリを空けるために裏へ回った
+    //   このアプリを終了させることがある。戻ると起動し直しになり、
+    //   録音も写真も開いていた画面も消える（OSの判断でアプリ側からは
+    //   止められない）。よって「消えても失わない」形にする。
+    //   保存先は IndexedDB。音声は Blob のまま置けるため容量制限に強い。
+    // ============================================================
+    const DRAFT_DB_NAME = 'smareco_draft';
+    const DRAFT_STORE   = 'draft';
+    const DRAFT_KEY     = 'current';
+    const DRAFT_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 半日以上前の下書きは使わない
+    let _draftAudioMime  = '';    // 復元した録音の形式（iOS は mp4 のため保持が要る）
+    let _captureIntent   = '';    // 直前にカメラ／アルバムを開いたか
+    let _reloadingForUpdate = false; // 版の入れ替えで読み直す直前は復元を尋ねない
+
+    function secToMmSs_(sec) {
+      const n = Math.max(0, Math.floor(Number(sec) || 0));
+      return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+    }
+
+    /** 今の録音の形式（録音直後は MediaRecorder、復元後は保存した値） */
+    function currentAudioMime_() {
+      return (mediaRecorder && mediaRecorder.mimeType) || _draftAudioMime || 'audio/webm';
+    }
+
+    function openDraftDb_() {
+      return new Promise(function (resolve, reject) {
+        try {
+          if (!window.indexedDB) { reject(new Error('indexedDB 未対応')); return; }
+          const req = indexedDB.open(DRAFT_DB_NAME, 1);
+          req.onupgradeneeded = function () {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(DRAFT_STORE)) db.createObjectStore(DRAFT_STORE);
+          };
+          req.onsuccess = function () { resolve(req.result); };
+          req.onerror   = function () { reject(req.error); };
+        } catch (e) { reject(e); }
+      });
+    }
+
+    function draftTx_(mode, fn) {
+      return openDraftDb_().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          let req = null;
+          const tx = db.transaction(DRAFT_STORE, mode);
+          try { req = fn(tx.objectStore(DRAFT_STORE)); }
+          catch (e) { try { db.close(); } catch (_) {} reject(e); return; }
+          tx.oncomplete = function () { db.close(); resolve(req ? req.result : undefined); };
+          tx.onerror    = function () { db.close(); reject(tx.error); };
+          tx.onabort    = function () { db.close(); reject(tx.error); };
+        });
+      });
+    }
+
+    /** 今の録音・写真・開いている画面を下書きとして残す（中身が無ければ何もしない） */
+    function saveDraft_(reason) {
+      try {
+        if (audioChunks.length === 0 && images.length === 0) return Promise.resolve();
+        const insEl = document.getElementById('instore-screen');
+        const rec = {
+          savedAt  : Date.now(),
+          audio    : audioChunks.length ? new Blob(audioChunks) : null,
+          audioMime: currentAudioMime_(),
+          recTime  : recTime,
+          images   : images.slice(),
+          instore  : !!(insEl && !insEl.classList.contains('hidden')),
+          reason   : reason || ''
+        };
+        return draftTx_('readwrite', function (store) { return store.put(rec, DRAFT_KEY); })
+          .catch(function (e) { console.warn('下書きの保存に失敗:', e); });
+      } catch (e) {
+        console.warn('下書きの保存に失敗:', e);
+        return Promise.resolve();
+      }
+    }
+
+    function clearDraft_() {
+      return draftTx_('readwrite', function (store) { return store.delete(DRAFT_KEY); })
+        .catch(function () { /* 消せなくても動作は続ける（次回の日時チェックで捨てられる） */ });
+    }
+
+    function loadDraft_() {
+      return draftTx_('readonly', function (store) { return store.get(DRAFT_KEY); })
+        .catch(function () { return null; });
+    }
+
+    /** 起動時：下書きが残っていれば内容を戻す */
+    async function restoreDraftIfAny_() {
+      if (_reloadingForUpdate) return;
+      let d = null;
+      try { d = await loadDraft_(); } catch (e) { return; }
+      if (!d) return;
+      const imgs = Array.isArray(d.images) ? d.images : [];
+      if (!d.audio && imgs.length === 0) { clearDraft_(); return; }
+      if (Date.now() - (d.savedAt || 0) > DRAFT_MAX_AGE_MS) { clearDraft_(); return; }
+
+      const what = [];
+      if (d.audio) what.push('・録音（' + secToMmSs_(d.recTime || 0) + '）');
+      if (imgs.length) what.push('・写真 ' + imgs.length + '枚');
+      const head = (d.reason === 'camera' || d.reason === 'album')
+        ? '写真を撮っている間に、端末の都合でアプリが起動し直されました。\n' +
+          '記録は端末に残してあるので、そのまま続けられます。\n\n'
+        : '前回の記録が、送信されないまま残っています。\n\n';
+      if (!confirm(head + '【残っている内容】\n' + what.join('\n') +
+                   '\n\n「OK」＝続きから使う\n「キャンセル」＝破棄する')) {
+        await clearDraft_();
+        return;
+      }
+
+      if (d.audio) {
+        audioChunks = [d.audio];
+        recTime = d.recTime || 0;
+        _draftAudioMime = d.audioMime || 'audio/webm';
+        document.getElementById('timer').innerText = secToMmSs_(recTime);
+        document.getElementById('rec-status').innerText = '復元しました';
+        updateBtns(true);
+      }
+      images = imgs.slice(0, 5);
+      updateImagePreview();
+      await clearDraft_();
+      // 店内画面で記録していたなら、その画面へ戻す
+      if (d.instore && typeof window.openInstore === 'function') window.openInstore();
+    }
+
+    // 画面が裏に回る瞬間に必ず残す。カメラ起動で終了させられても失わない
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') saveDraft_(_captureIntent || 'background');
+    });
+    window.addEventListener('pagehide', function () { saveDraft_(_captureIntent || 'pagehide'); });
+
+    /** カメラ／アルバムを開く直前に呼ぶ（この後アプリが終了させられることがある） */
+    window.beforeCapture = function (kind) {
+      _captureIntent = kind;
+      saveDraft_(kind);
+    };
+
     window.clearAll = function () {
       if (!confirm("録音と画像を削除しますか？")) return;
       audioChunks = [];
       recTime = 0;
       images = [];
+      _draftAudioMime = '';
       document.getElementById('timer').innerText = "00:00";
+      document.getElementById('rec-status').innerText = "READY";
       updateBtns(false);
       updateImagePreview();
+      clearDraft_();
     }
 
       ;
@@ -2917,8 +3105,9 @@
     window.playAudio = function () {
       if (audioChunks.length === 0) return;
 
+      // v78.0: 復元した録音は iOS だと mp4。形式を取り違えると再生できない
       const blob = new Blob(audioChunks, {
-        type: 'audio/webm'
+        type: currentAudioMime_()
       });
       const a = new Audio(URL.createObjectURL(blob));
       a.play();
@@ -2935,13 +3124,13 @@
 
       if (input.files && input.files[0]) {
         const file = input.files[0];
-        const reader = new FileReader();
+        // v78.0: 元画像を base64 に起こさず、そのまま描画してから縮小する。
+        //   写真1枚ぶんのメモリの山が小さくなり、撮影後にアプリが終了させられにくくなる。
+        const objUrl = URL.createObjectURL(file);
+        const img = new Image();
 
-        reader.onload = function (e) {
-          const img = new Image();
-          img.src = e.target.result;
-
-          img.onload = function () {
+        img.onload = function () {
+          try {
             const cvs = document.createElement('canvas');
             const ctx = cvs.getContext('2d');
             let w = img.width,
@@ -2965,14 +3154,28 @@
               data: cvs.toDataURL('image/jpeg', 0.7), type: 'image/jpeg'
             });
             updateImagePreview();
+            saveDraft_('image-added'); // 撮った瞬間に端末へ残す
+          } catch (e) {
+            alert('写真の取り込みに失敗しました。\n（' + (e && e.message ? e.message : e) + '）');
+          } finally {
+            URL.revokeObjectURL(objUrl);
             input.value = "";
+            _captureIntent = '';
           }
+        };
 
-            ;
-        }
+        // v78.0: 読めない形式（HEIC など）を黙って捨てない。
+        //   「撮ったのに増えない」の原因が分からないままになるのを防ぐ
+        img.onerror = function () {
+          URL.revokeObjectURL(objUrl);
+          input.value = "";
+          _captureIntent = '';
+          alert('この写真を読み込めませんでした。\n別の写真をお試しいただくか、カメラの保存形式を「互換性優先（JPEG）」に変更してください。');
+        };
 
-          ;
-        reader.readAsDataURL(file);
+        img.src = objUrl;
+      } else {
+        _captureIntent = '';
       }
     }
 
@@ -3037,7 +3240,8 @@
           }
 
           const audioBlob = new Blob(audioChunks);
-          const detectedMime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+          // v78.0: 復元した録音は MediaRecorder が無い。保存しておいた形式を使う
+          const detectedMime = currentAudioMime_();
           const reader = new FileReader();
           reader.readAsDataURL(audioBlob);
 
@@ -3079,10 +3283,11 @@
                 );
                 if (reRecord) {
                   // 録音だけ破棄して READY に戻す（写真は残す）
-                  audioChunks = []; recTime = 0;
+                  audioChunks = []; recTime = 0; _draftAudioMime = '';
                   document.getElementById('timer').innerText = "00:00";
                   document.getElementById('rec-status').innerText = "READY";
                   updateBtns(false);
+                  saveDraft_('re-record'); // 写真は残るので下書きも写真だけに更新する
                   resolve();
                   setTimeout(() => alert("🎙️ マイクボタンを押して、もう一度はっきりと録音してください。\n（写真は保持されています）"), 50);
                   return;
@@ -3094,11 +3299,12 @@
               }
 
               // Reset
-              audioChunks = []; recTime = 0; images = [];
+              audioChunks = []; recTime = 0; images = []; _draftAudioMime = '';
               document.getElementById('timer').innerText = "00:00";
               document.getElementById('rec-status').innerText = "READY";
               if (emgEl) emgEl.checked = false;
               updateBtns(false); updateImagePreview();
+              clearDraft_(); // 送信できたので下書きは要らない
 
               if (o.quietSuccess) {
                 alert("記録しました。");
@@ -4281,7 +4487,7 @@
                             'patrol-share-modal', 'store-meeting-modal', 'store-print-modal'];
 
     // v76.2: 画面に表示するバージョン。リリースのたびにここを上げる
-    const APP_VERSION = 'v77.2';
+    const APP_VERSION = 'v78.0';
 
     /** 端末の「戻る」用に履歴を1つ積む（画面を開くときに呼ぶ） */
     function pushOverlayHistory_() {
@@ -4326,6 +4532,7 @@
           if (sessionStorage.getItem('smareco_auto_reloaded')) return;
           sessionStorage.setItem('smareco_auto_reloaded', '1');
         } catch (e) { /* sessionStorage が使えない環境では素通し */ }
+        _reloadingForUpdate = true; // 読み直す直前に下書きの復元を尋ねない
         window.reloadLatest();
       } catch (e) { /* 通信できないときは何もしない */ }
     }
@@ -4414,15 +4621,73 @@
         ? '<span class="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-1 ml-1">重要</span>' : '';
       const imgs = (m.imageUrls && m.imageUrls.length)
         ? '<div class="grid grid-cols-3 gap-1.5 mt-2">' + m.imageUrls.map(u =>
-            '<a href="' + esc(u) + '" target="_blank" rel="noopener" class="block rounded overflow-hidden border border-slate-200 bg-white">' +
+            '<a href="' + esc(u) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="block rounded overflow-hidden border border-slate-200 bg-white">' +
             '<img src="' + esc(driveThumbUrl_(u, 400)) + '" class="w-full h-20 object-cover" alt="記録写真" loading="lazy" ' +
             'onerror="this.style.display=&quot;none&quot;">' +
             '</a>').join('') + '</div>'
         : '';
-      return '<div class="bg-white rounded-xl p-3 border ' + (m.isEmergency ? 'border-red-200' : 'border-slate-200') + '">' +
+      // v78.0: カード自体を押せるようにして、原文・写真を報告書の詳細で読めるようにする
+      //   （写真のリンクは個別に開くため、カードのタップへ伝播させない）
+      const tap = m.id
+        ? ' onclick="window.openReportDetail(\'' + esc(m.id) + '\')" class="cursor-pointer active:bg-slate-50 '
+        : ' class="';
+      return '<div' + tap + 'bg-white rounded-xl p-3 border ' + (m.isEmergency ? 'border-red-200' : 'border-slate-200') + '">' +
+        '<div class="flex items-center justify-between gap-2">' +
         '<div class="text-[11px] text-slate-500">' + esc(m.time) + ' ・ ' + esc(m.name) + badge + '</div>' +
+        (m.id ? '<span class="text-[10px] font-bold text-teal-700 flex-shrink-0">詳しく見る ›</span>' : '') +
+        '</div>' +
         '<div class="text-sm text-slate-700 whitespace-pre-wrap break-words mt-1">' + esc(m.content || '（内容なし）') + '</div>' +
         imgs + '</div>';
+    }
+
+    /**
+     * v78.0: 受け取った店内ボードを画面へ反映する。
+     *   記録直後はサーバーの応答にそのまま同梱されたボードを使う（取得のために
+     *   もう一度通信すると、その1回が失敗しただけで件数が増えないため）。
+     * @returns {boolean} 画面に留まってよければ true（使えないユーザーなら false）
+     */
+    function applyStoreBoard_(board) {
+      const list = document.getElementById('instore-memo-list');
+      _storeBoard = board;
+      _currentUserShop = board.shop || _currentUserShop;
+      document.getElementById('instore-shop').innerText =
+        (board.shop || '--') + (board.viewingAsOther ? '（検証用・別店舗として操作中）' : '');
+      document.getElementById('instore-date').innerText = board.dateDisplay || '--';
+      const memos = board.memos || [];
+      document.getElementById('instore-memo-count').innerText = memos.length;
+
+      // v76.5: 使えないユーザー（本部所属など）は画面に留めない。
+      //   案内だけの画面が全画面で居座り、他の操作ができなくなるのを防ぐ
+      if (board.canPost === false) {
+        window.closeInstore();
+        alert(board.message || '店舗内情報共有は店舗所属の方が使う機能です。');
+        // 検証用アカウントで対象店舗が未設定なら、そのまま店舗選択へ案内する
+        if (board.needsShopSelect && typeof window.setMyShop === 'function') window.setMyShop();
+        return false;
+      }
+      document.getElementById('instore-post-card').classList.remove('hidden');
+      document.getElementById('instore-recorder-slot').classList.remove('hidden');
+
+      list.innerHTML = memos.length
+        ? memos.map(memoCardHtml_).join('')
+        : '<div class="bg-white rounded-xl p-6 text-center text-slate-400 text-xs border border-slate-200">まだ記録がありません。マイクボタンで録音して「この内容を記録する」を押してください。</div>';
+
+      // まとめの有無で見せ方を変える（カード自体は常に出す）
+      const label = document.getElementById('btn-summarize-label');
+      const status = document.getElementById('instore-meeting-status');
+      const openBtn = document.getElementById('btn-open-meeting');
+      if (board.meeting) {
+        label.innerText = 'まとめを更新する';
+        status.textContent = (board.meeting.status || '下書き') + '（記録 ' + memos.length + ' 件）';
+        if (openBtn) openBtn.classList.remove('hidden');
+      } else {
+        label.innerText = 'まとめる';
+        status.textContent = memos.length
+          ? 'まだ作成していません。下の「まとめる」を押すと、本日の記録 ' + memos.length + ' 件から資料ができます。'
+          : 'まだ作成していません。まず記録をしてから「まとめる」を押してください。';
+        if (openBtn) openBtn.classList.add('hidden');
+      }
+      return true;
     }
 
     /** ① 本日の店内メモと、まとめの状態を読み込む */
@@ -4430,45 +4695,52 @@
       const list = document.getElementById('instore-memo-list');
       if (!silent) list.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">読み込み中…</div>';
       try {
-        const board = await runGasTask('getStoreBoard', { shop: instoreShopParam_() });
-        _storeBoard = board;
-        _currentUserShop = board.shop || _currentUserShop;
-        document.getElementById('instore-shop').innerText =
-          (board.shop || '--') + (board.viewingAsOther ? '（検証用・別店舗として操作中）' : '');
-        document.getElementById('instore-date').innerText = board.dateDisplay || '--';
-        document.getElementById('instore-memo-count').innerText = (board.memos || []).length;
-
-        // v76.5: 使えないユーザー（本部所属など）は画面に留めない。
-        //   案内だけの画面が全画面で居座り、他の操作ができなくなるのを防ぐ
-        if (board.canPost === false) {
-          window.closeInstore();
-          alert(board.message || '店舗内情報共有は店舗所属の方が使う機能です。');
-          // 検証用アカウントで対象店舗が未設定なら、そのまま店舗選択へ案内する
-          if (board.needsShopSelect && typeof window.setMyShop === 'function') window.setMyShop();
-          return;
-        }
-        document.getElementById('instore-post-card').classList.remove('hidden');
-        document.getElementById('instore-recorder-slot').classList.remove('hidden');
-
-        list.innerHTML = (board.memos && board.memos.length)
-          ? board.memos.map(memoCardHtml_).join('')
-          : '<div class="bg-white rounded-xl p-6 text-center text-slate-400 text-xs border border-slate-200">まだ記録がありません。マイクボタンで録音して「この内容を記録する」を押してください。</div>';
-
-        // まとめの有無で表示を切り替える
-        const label = document.getElementById('btn-summarize-label');
-        const card = document.getElementById('instore-meeting-card');
-        const status = document.getElementById('instore-meeting-status');
-        if (board.meeting) {
-          label.innerText = 'まとめを更新する';
-          card.classList.remove('hidden');
-          status.textContent = (board.meeting.status || '下書き') +
-            '（記録 ' + ((board.memos || []).length) + ' 件）';
-        } else {
-          label.innerText = 'まとめる';
-          card.classList.add('hidden');
-        }
+        applyStoreBoard_(await runGasTask('getStoreBoard', { shop: instoreShopParam_() }));
       } catch (e) {
+        // v78.0: 読み込めなかったことを件数の欄にも出す。0件と区別がつかないと原因を追えない
+        const cnt = document.getElementById('instore-memo-count');
+        if (cnt) cnt.innerText = '取得できません';
         list.innerHTML = '<div class="p-6 text-center text-red-500 text-xs">読み込みエラー: ' +
+          window.escapeHtmlV73(e.message || String(e)) +
+          '<br><button onclick="window.loadStoreBoard(false)" class="mt-3 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold">もう一度読み込む</button></div>';
+      }
+    };
+
+    /** v78.0: これまでのまとめ（自店舗の当月分）を開閉する */
+    let _storeHistoryLoaded = false;
+    window.toggleStoreHistory = async function () {
+      const box = document.getElementById('instore-history');
+      const label = document.getElementById('store-history-label');
+      if (!box) return;
+      if (!box.classList.contains('hidden')) {
+        box.classList.add('hidden');
+        if (label) label.innerText = 'これまでのまとめを見る';
+        return;
+      }
+      box.classList.remove('hidden');
+      if (label) label.innerText = '閉じる';
+      if (_storeHistoryLoaded) return;
+      box.innerHTML = '<div class="p-4 text-center text-slate-400 text-xs">読み込み中…</div>';
+      try {
+        const all = await runGasTask('getStoreMeetings');
+        const esc = window.escapeHtmlV73;
+        const list = Array.isArray(all) ? all : [];
+        box.innerHTML = list.length
+          ? list.map(function (x) {
+              return '<button onclick="window.openStoreMeeting(\'' + esc(x.docId) + '\')" ' +
+                'class="btn-press w-full text-left bg-slate-50 border border-slate-200 rounded-lg p-3 active:bg-slate-100">' +
+                '<div class="flex justify-between items-center gap-2">' +
+                '<div class="min-w-0"><div class="text-xs font-bold text-slate-700">' + esc(x.dateDisplay) +
+                ' ・ ' + esc(x.shop) + '</div>' +
+                '<div class="text-[11px] text-slate-500 mt-0.5">' + esc(x.status || '下書き') +
+                ' ・ 記録' + (x.memoCount || 0) + '件</div></div>' +
+                '<span class="material-icons text-slate-400 text-base flex-shrink-0">chevron_right</span>' +
+                '</div></button>';
+            }).join('')
+          : '<div class="p-4 text-center text-slate-400 text-xs bg-slate-50 rounded-lg border border-slate-200">今月のまとめはまだありません。</div>';
+        _storeHistoryLoaded = true;
+      } catch (e) {
+        box.innerHTML = '<div class="p-4 text-center text-red-500 text-xs">読み込みエラー: ' +
           window.escapeHtmlV73(e.message || String(e)) + '</div>';
       }
     };
@@ -4480,7 +4752,14 @@
         emergencyId : 'chk-emg-instore',
         confirmText : '店内メモとして記録しますか？\n（この内容は自分の店舗の中だけで共有されます）',
         quietSuccess: true,
-        onSuccess   : function () { window.loadStoreBoard(true); }
+        // v78.0: 記録の応答にはサーバーが数え直したボードが入っている。
+        //   それを直接反映するので「記録できたのに件数が増えない」が起きない。
+        //   古い版のサーバー（ボードを返さない）に当たったときだけ取得し直す。
+        onSuccess   : function (res) {
+          _storeHistoryLoaded = false; // まとめ一覧も次に開くとき読み直す
+          if (res && res.board) applyStoreBoard_(res.board);
+          else window.loadStoreBoard(true);
+        }
       });
     };
 
@@ -4508,6 +4787,7 @@
           }
           return window.openStoreMeeting(res.docId);
         }
+        _storeHistoryLoaded = false;
         await window.loadStoreBoard(true);
         window.openStoreMeeting(res.docId);
       } catch (e) {
